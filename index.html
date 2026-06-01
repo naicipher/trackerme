@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TrackerMe">
+<title>TrackerMe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green:#1D9E75;--green-light:#E1F5EE;--green-dark:#085041;
+    --purple:#7F77DD;--purple-light:#EEEDFE;
+    --amber:#BA7517;--amber-light:#FAEEDA;
+    --blue:#378ADD;--blue-light:#E6F1FB;
+    --bg:#F7F6F2;--card:#FFFFFF;--text:#1a1a18;--muted:#888780;
+    --border:rgba(0,0,0,0.08);--radius:18px;
+    --safe-bottom:env(safe-area-inset-bottom,16px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);overflow:hidden;}
+  .app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+
+  /* HEADER */
+  .header{padding:52px 20px 12px;background:var(--bg);}
+  .header-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+  .app-title{font-family:'DM Serif Display',serif;font-size:28px;line-height:1.1;}
+  .app-title em{color:var(--green);font-style:italic;}
+  .date-badge{background:var(--green);color:white;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap;}
+  .week-nav{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+  .week-nav::-webkit-scrollbar{display:none;}
+  .day-pill{flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:8px 12px;border-radius:14px;border:1.5px solid var(--border);cursor:pointer;transition:all .2s;background:var(--card);min-width:46px;}
+  .day-pill.active{background:var(--green);border-color:var(--green);}
+  .day-pill.active .day-letter,.day-pill.active .day-num{color:white;}
+  .day-pill.has-activity::after{content:'';display:block;width:4px;height:4px;border-radius:50%;background:var(--green);margin-top:3px;}
+  .day-pill.active.has-activity::after{background:rgba(255,255,255,.6);}
+  .day-letter{font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;}
+  .day-num{font-size:15px;font-weight:500;color:var(--text);}
+
+  /* CONTENT */
+  .content{flex:1;overflow-y:auto;padding:0 16px;scrollbar-width:none;padding-bottom:calc(80px + var(--safe-bottom));}
+  .content::-webkit-scrollbar{display:none;}
+
+  /* PHASE BANNER */
+  .phase-banner{background:var(--green-dark);color:white;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+  .phase-name{font-family:'DM Serif Display',serif;font-size:18px;}
+  .phase-week{font-size:12px;opacity:.7;margin-top:2px;}
+  .phase-poids-val{font-size:20px;font-weight:500;text-align:right;}
+  .phase-poids-label{font-size:11px;opacity:.6;text-align:right;}
+
+  /* GENERIC CARDS */
+  .section-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500;margin:16px 0 8px;}
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:10px;border:1px solid var(--border);}
+  .card-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .card-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .card-label{font-size:13px;font-weight:500;}
+  .card-sub{font-size:12px;color:var(--muted);}
+  .activity-list{display:flex;flex-direction:column;gap:6px;}
+  .activity-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.5;}
+  .activity-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+  .dot-green{background:var(--green);}.dot-purple{background:var(--purple);}.dot-blue{background:var(--blue);}
+  .checklist{display:flex;flex-direction:column;gap:8px;}
+  .check-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:12px;cursor:pointer;transition:all .2s;}
+  .check-item.checked{opacity:.5;}
+  .check-box{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:white;transition:all .2s;}
+  .check-item.checked .check-box{background:var(--green);border-color:var(--green);}
+  .check-tick{font-size:13px;color:white;display:none;}
+  .check-item.checked .check-tick{display:block;}
+  .check-item.checked .check-text{text-decoration:line-through;color:var(--muted);}
+  .check-text{font-size:13px;}
+  /* STEPS */
+  .steps-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:12px;}
+  .steps-icon{width:22px;height:22px;border-radius:7px;background:var(--amber-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;}
+  .steps-label{font-size:13px;color:var(--text);flex:1;}
+  .steps-input-wrap{display:flex;align-items:center;gap:6px;}
+  .steps-input{width:80px;padding:4px 8px;border-radius:8px;border:1.5px solid var(--border);background:white;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;text-align:center;}
+  .steps-input:focus{border-color:var(--amber);}
+  .steps-save{padding:4px 10px;background:var(--amber);color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;}
+  .steps-bar-wrap{margin-top:5px;background:#F1EFE8;border-radius:4px;height:5px;overflow:hidden;}
+  .steps-bar{height:100%;border-radius:4px;background:var(--amber);transition:width .5s;}
+  .steps-meta{display:flex;justify-content:space-between;margin-top:3px;}
+  .steps-meta span{font-size:11px;color:var(--muted);}
+  /* SNACK TRACKER */
+  .snack-input-row{display:flex;gap:8px;margin-bottom:10px;}
+  .snack-input{flex:1;padding:10px 12px;border-radius:12px;border:1.5px solid var(--border);background:white;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;}
+  .snack-input:focus{border-color:#E24B4A;}
+  .snack-add-btn{padding:10px 14px;background:#E24B4A;color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;}
+  .snack-add-btn:disabled{opacity:.5;pointer-events:none;}
+  .snack-entry{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg);border-radius:11px;margin-bottom:6px;}
+  .snack-entry-name{flex:1;font-size:13px;color:var(--text);}
+  .snack-entry-kcal{font-size:12px;font-weight:500;color:#E24B4A;background:#FDE8E8;padding:2px 8px;border-radius:8px;white-space:nowrap;}
+  .snack-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0 2px;line-height:1;}
+  .snack-total-bar{background:#FDE8E8;border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+  .snack-total-label{font-size:12px;color:#993C1D;}
+  .snack-total-val{font-size:16px;font-weight:500;color:#E24B4A;}
+  .snack-estimating{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border-radius:11px;margin-bottom:6px;font-size:13px;color:var(--muted);}
+  /* NUTRITION TRACKER */
+  .nutri-meal-block{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;}
+  .nutri-meal-title{font-size:13px;font-weight:500;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .nutri-input-row{display:flex;gap:8px;margin-bottom:8px;}
+  .nutri-input{flex:1;padding:10px 12px;border-radius:12px;border:1.5px solid var(--border);background:white;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;}
+  .nutri-input:focus{border-color:var(--green);}
+  .nutri-add-btn{padding:10px 14px;background:var(--green);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;}
+  .nutri-add-btn:disabled{opacity:.5;pointer-events:none;}
+  .nutri-import-btn{width:100%;padding:10px;background:var(--green-light);color:var(--green-dark);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:8px;}
+  .nutri-import-btn:disabled{opacity:.5;pointer-events:none;}
+  .nutri-entry{padding:9px 12px;background:var(--bg);border-radius:11px;margin-bottom:6px;}
+  .nutri-entry-top{display:flex;align-items:center;gap:8px;}
+  .nutri-entry-name{flex:1;font-size:13px;color:var(--text);}
+  .nutri-entry-kcal{font-size:12px;font-weight:500;color:var(--green-dark);background:var(--green-light);padding:2px 8px;border-radius:8px;white-space:nowrap;}
+  .nutri-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0 2px;line-height:1;}
+  .nutri-macros{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;}
+  .macro-pill{font-size:10px;padding:2px 7px;border-radius:7px;font-weight:500;}
+  .macro-p{background:#E1F5EE;color:#085041;}
+  .macro-c{background:#FAEEDA;color:#633806;}
+  .macro-f{background:#FDE8E8;color:#8B1A1A;}
+  .nutri-day-total{background:var(--green-dark);color:white;border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;}
+  .nutri-total-kcal{font-family:'DM Serif Display',serif;font-size:26px;}
+  .nutri-total-label{font-size:11px;opacity:.7;margin-top:2px;}
+  .nutri-total-macros{display:flex;gap:12px;margin-top:10px;}
+  .nutri-tm{flex:1;text-align:center;}
+  .nutri-tm-val{font-size:16px;font-weight:500;}
+  .nutri-tm-label{font-size:10px;opacity:.7;}
+  .nutri-estimating{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border-radius:11px;margin-bottom:6px;font-size:13px;color:var(--muted);}
+  .tip{background:var(--green-light);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;font-size:13px;color:var(--green-dark);line-height:1.6;}
+  .rest-card{background:var(--card);border-radius:var(--radius);padding:28px 20px;text-align:center;border:1px solid var(--border);margin-bottom:10px;}
+
+  /* MEAL CARD */
+  .meal-card-ai{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:10px;}
+  .meal-slot{padding:12px 14px;border-bottom:1px solid var(--bg);position:relative;}
+  .meal-slot:last-child{border-bottom:none;}
+  .meal-slot-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .meal-slot-left{flex:1;}
+  .meal-time-tag{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;margin-bottom:3px;}
+  .meal-dish{font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px;}
+  .meal-desc{font-size:12px;color:var(--muted);line-height:1.45;}
+  .meal-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
+  .meal-tag{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:500;}
+  .tag-korean{background:#FDE8E8;color:#8B1A1A;}
+  .tag-japanese{background:#FFF0E0;color:#7A3D00;}
+  .tag-chinese{background:#E8F4FD;color:#0A4D7A;}
+  .tag-french{background:#EDF5E1;color:#2D5A0A;}
+  .tag-protein{background:var(--green-light);color:var(--green-dark);}
+  .tag-other{background:#F3F0F9;color:#4A3A80;}
+
+  /* INDIVIDUAL REFRESH BTN */
+  .meal-refresh-single{background:none;border:1.5px solid var(--border);color:var(--muted);cursor:pointer;font-size:13px;padding:4px 9px;border-radius:9px;transition:all .2s;flex-shrink:0;margin-top:2px;}
+  .meal-refresh-single:active{background:var(--green-light);border-color:var(--green);color:var(--green-dark);}
+  .meal-refresh-single.loading-single{opacity:.5;pointer-events:none;}
+
+  /* INLINE LOADING */
+  .slot-loading{display:flex;align-items:center;gap:8px;padding:14px 14px;}
+  .spinner{width:16px;height:16px;border:2px solid var(--green-light);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-text{font-size:13px;color:var(--muted);}
+  .meal-loading-full{padding:20px 16px;display:flex;align-items:center;gap:10px;}
+  .meal-error{padding:14px 16px;font-size:13px;color:var(--muted);}
+
+  /* WEEK VIEW */
+  .week-meal-day{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;}
+  .week-day-header{padding:12px 16px;background:var(--green-dark);color:white;display:flex;justify-content:space-between;align-items:center;}
+  .week-day-name{font-family:'DM Serif Display',serif;font-size:16px;}
+  .week-day-refresh{background:rgba(255,255,255,.2);border:none;color:white;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .week-slot{padding:10px 16px;border-bottom:1px solid var(--bg);display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .week-slot:last-child{border-bottom:none;}
+  .week-slot-left{flex:1;}
+  .week-slot-time{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;margin-bottom:2px;}
+  .week-slot-dish{font-size:13px;font-weight:500;}
+  .week-slot-refresh{background:none;border:1.5px solid var(--border);color:var(--muted);cursor:pointer;font-size:12px;padding:3px 8px;border-radius:8px;transition:all .2s;flex-shrink:0;}
+
+  /* SHOPPING LIST */
+  .shop-section{margin-bottom:14px;}
+  .shop-category{font-size:12px;font-weight:500;color:var(--green-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .shop-items{display:flex;flex-direction:column;gap:6px;}
+  .shop-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border-radius:12px;border:1px solid var(--border);cursor:pointer;}
+  .shop-item.bought{opacity:.4;}
+  .shop-item.bought .shop-name{text-decoration:line-through;}
+  .shop-cb{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:white;transition:all .2s;}
+  .shop-item.bought .shop-cb{background:var(--green);border-color:var(--green);}
+  .shop-tick{font-size:11px;color:white;display:none;}
+  .shop-item.bought .shop-tick{display:block;}
+  .shop-name{font-size:13px;flex:1;}
+  .shop-qty{font-size:12px;color:var(--muted);}
+  .shop-loading{padding:30px;text-align:center;color:var(--muted);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .big-spinner{width:28px;height:28px;border:3px solid var(--green-light);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;}
+  .shop-actions{display:flex;gap:8px;margin-bottom:14px;}
+  .shop-btn{flex:1;padding:11px;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text);transition:all .2s;}
+  .shop-btn.primary{background:var(--green);color:white;border-color:var(--green);}
+
+  /* STATS */
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .stat-card{background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid var(--border);}
+  .stat-val{font-family:'DM Serif Display',serif;font-size:28px;color:var(--green);}
+  .stat-label{font-size:12px;color:var(--muted);margin-top:2px;}
+  .progress-row{display:flex;justify-content:space-between;margin-bottom:6px;}
+  .progress-track{background:#F1EFE8;border-radius:4px;height:6px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:4px;background:var(--green);transition:width .5s;}
+  .weight-input-row{display:flex;gap:10px;margin-bottom:10px;}
+  .weight-input{flex:1;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);font-family:'DM Sans',sans-serif;font-size:16px;color:var(--text);outline:none;}
+  .weight-input:focus{border-color:var(--green);}
+  .save-btn{padding:12px 18px;background:var(--green);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;}
+  .weight-history{display:flex;flex-direction:column;gap:6px;}
+  .weight-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:10px;font-size:13px;}
+  .diff-down{color:var(--green);}.diff-up{color:#E24B4A;}
+
+  /* PREFS */
+  .pref-section{margin-bottom:16px;}
+  .pref-title{font-size:13px;font-weight:500;margin-bottom:8px;}
+  .pref-grid{display:flex;flex-wrap:wrap;gap:6px;}
+  .pref-chip{padding:7px 13px;border-radius:20px;font-size:13px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;transition:all .15s;}
+  .pref-chip.on{background:var(--green-light);border-color:var(--green);color:var(--green-dark);font-weight:500;}
+  .save-prefs-btn{width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;margin-top:8px;}
+
+  /* BOTTOM NAV */
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(247,246,242,.93);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:10px 0 calc(10px + var(--safe-bottom));}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0;}
+  .nav-icon{font-size:20px;transition:transform .2s;}
+  .nav-label{font-size:10px;color:var(--muted);font-weight:500;}
+  .nav-item.active .nav-label{color:var(--green);}
+  .nav-item.active .nav-icon{transform:scale(1.1);}
+  .view{display:none;}.view.active{display:block;}
+</style>
+
+  <meta name="theme-color" content="#1D9E75">
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', function(){
+        const sw = "self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))));";
+        const blob = new Blob([sw], {type:'application/javascript'});
+        navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+      });
+    }
+  </script>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="app-title">Mon plan<br><em>forme</em></div>
+      <div class="date-badge" id="todayBadge"></div>
+    </div>
+    <div class="week-nav" id="weekNav"></div>
+  </div>
+
+  <div class="content">
+    <div class="view active" id="viewToday"><div id="dayContent"></div></div>
+
+    <!-- SEMAINE + COURSES -->
+    <div class="view" id="viewWeek">
+      <div id="weekViewContent"></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="view" id="viewStats">
+      <p class="section-title">Ma progression</p>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-val" id="statPoids">81,4</div><div class="stat-label">kg actuels</div></div>
+        <div class="stat-card"><div class="stat-val" id="statPerdu">0</div><div class="stat-label">kg perdus</div></div>
+        <div class="stat-card"><div class="stat-val" id="statSemaines">0</div><div class="stat-label">semaines actives</div></div>
+        <div class="stat-card"><div class="stat-val">~70</div><div class="stat-label">kg objectif</div></div>
+      </div>
+      <p class="section-title">Vers l'objectif</p>
+      <div class="card" style="margin-bottom:14px">
+        <div class="progress-row"><span style="font-size:12px;color:var(--muted)">81,4 kg → 70 kg</span><span style="font-size:12px;font-weight:500" id="progressPct">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressBar" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px"><span style="font-size:11px;color:var(--muted)">Départ</span><span style="font-size:11px;color:var(--muted)">Objectif</span></div>
+      </div>
+      <p class="section-title">Enregistrer mon poids</p>
+      <div class="weight-input-row">
+        <input type="number" class="weight-input" id="weightInput" placeholder="ex: 80.5" step="0.1" min="40" max="200">
+        <button class="save-btn" onclick="saveWeight()">Enregistrer</button>
+      </div>
+      <p class="section-title">Historique</p>
+      <div class="weight-history" id="weightHistory"></div>
+
+      <p class="section-title" style="margin-top:20px">🦶 Historique des pas</p>
+      <div id="stepsStatsSection"></div>
+    </div>
+
+    <!-- RÉGLAGES -->
+    <div class="view" id="viewInfo">
+      <p class="section-title">Mes préférences alimentaires</p>
+      <div class="card">
+        <div class="pref-section"><div class="pref-title">Cuisines préférées 🌏</div><div class="pref-grid" id="prefCuisines"></div></div>
+        <div class="pref-section"><div class="pref-title">Régime</div><div class="pref-grid" id="prefDiet"></div></div>
+        <div class="pref-section"><div class="pref-title">À éviter</div><div class="pref-grid" id="prefAvoid"></div></div>
+        <button class="save-prefs-btn" onclick="savePrefs()">💾 Enregistrer mes préférences</button>
+      </div>
+      <p class="section-title">💪 Séance A — bas du corps</p>
+      <div class="card"><div class="activity-list">
+        <div class="activity-item"><div class="activity-dot dot-blue"></div><a href="https://www.youtube.com/watch?v=29OfN4ztW_g" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:500">Hip thrust — 4×12 ↗</a> <span style="font-size:12px;color:var(--muted)">fessiers + lombaires</span></div>
+        <div class="activity-item"><div class="activity-dot dot-blue"></div><a href="https://www.youtube.com/watch?v=rah3eJCPXHA" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:500">Squat bulgare — 3×10 par jambe ↗</a></div>
+        <div class="activity-item"><div class="activity-dot dot-blue"></div><a href="https://www.youtube.com/watch?v=JrcoGEZn6L4" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:500">Dead bug — 3×10 ↗</a> <span style="font-size:12px;color:var(--muted)">abdos profonds</span></div>
+        <div class="activity-item"><div class="activity-dot dot-blue"></div><a href="https://www.youtube.com/watch?v=XeN4pEZZJNI" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:500">Gainage latéral — 3×25 sec par côté ↗</a></div>
+        <div class="activity-item"><div class="activity-dot dot-blue"></div><a href="https://www.youtube.com/watch?v=jdePJIKb-5o" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:500">Pont fessier — 3×15 ↗</a></div>
+      </div></div>
+      <p class="section-title">💪 Séance B — haut du corps</p>
+      <div class="card"><div class="activity-list">
+        <div class="activity-item"><div class="activity-dot dot-blue"></div><a href="https://www.youtube.com/watch?v=OG5S3x7T8QQ" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:500">Rowing haltères — 3×12 ↗</a> <span style="font-size:12px;color:var(--muted)">dos + biceps</span></div>
+        <div class="activity-item"><div class="activity-dot dot-blue"></div><a href="https://www.youtube.com/watch?v=guW_ENwLOMI" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:500">Développé épaules — 3×12 ↗</a></div>
+        <div class="activity-item"><div class="activity-dot dot-blue"></div><a href="https://www.youtube.com/watch?v=K2VljzCC16g" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:500">Pompes — 3×10-15 ↗</a></div>
+        <div class="activity-item"><div class="activity-dot dot-blue"></div><a href="https://www.youtube.com/watch?v=0qER1IjPNbU" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:500">Curl biceps — 3×12 ↗</a></div>
+        <div class="activity-item"><div class="activity-dot dot-blue"></div>Step-up cardio — 3×45 sec <span style="font-size:12px;color:var(--muted)">(montée/descente d'une marche)</span></div>
+      </div></div>
+      <p class="section-title">🧘 Yoga — Yoga with Adriene</p>
+      <div class="card"><div class="activity-list">
+        <div class="activity-item"><div class="activity-dot dot-purple"></div><a href="https://www.youtube.com/watch?v=y39PrKY_4JM" target="_blank" style="color:var(--purple);text-decoration:none;font-weight:500">Cat-Cow (Chat-vache) ↗</a> <span style="font-size:12px;color:var(--muted)">10 cycles · mobilité lombaire</span></div>
+        <div class="activity-item"><div class="activity-dot dot-purple"></div><a href="https://www.youtube.com/watch?v=XeXz8fIZDCE" target="_blank" style="color:var(--purple);text-decoration:none;font-weight:500">Yoga for Lower Back Pain ↗</a> <span style="font-size:12px;color:var(--muted)">20 min · idéal lombaires</span></div>
+        <div class="activity-item"><div class="activity-dot dot-purple"></div><a href="https://www.youtube.com/watch?v=J-05m7bboK0" target="_blank" style="color:var(--purple);text-decoration:none;font-weight:500">Lower Back Love ↗</a> <span style="font-size:12px;color:var(--muted)">27 min · complet</span></div>
+        <div class="activity-item"><div class="activity-dot dot-purple"></div><a href="https://www.youtube.com/watch?v=Ho9em79_0qg" target="_blank" style="color:var(--purple);text-decoration:none;font-weight:500">Hips & Lower Back Release ↗</a> <span style="font-size:12px;color:var(--muted)">hanches + dos</span></div>
+        <div class="activity-item"><div class="activity-dot dot-purple"></div><a href="https://www.youtube.com/watch?v=5rT--p_cLOc" target="_blank" style="color:var(--purple);text-decoration:none;font-weight:500">Warrior 1 ↗</a> · <a href="https://www.youtube.com/watch?v=4Ejz7IgODlU" target="_blank" style="color:var(--purple);text-decoration:none;font-weight:500">Warrior 2 ↗</a> <span style="font-size:12px;color:var(--muted)">renforcement doux</span></div>
+        <div class="activity-item"><div class="activity-dot dot-purple"></div><a href="https://www.youtube.com/watch?v=r7xsYgTeM2Q" target="_blank" style="color:var(--purple);text-decoration:none;font-weight:500">Sunrise Yoga 15 min ↗</a> <span style="font-size:12px;color:var(--muted)">parfait le matin</span></div>
+      </div></div>
+    </div>
+
+    <!-- NUTRITION TRACKER -->
+    <div class="view" id="viewNutri">
+      <div id="nutriViewContent"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" id="navToday" onclick="switchView('today')"><div class="nav-icon">📅</div><div class="nav-label">Aujourd'hui</div></div>
+    <div class="nav-item" id="navWeek" onclick="switchView('week')"><div class="nav-icon">🛒</div><div class="nav-label">Semaine</div></div>
+    <div class="nav-item" id="navNutri" onclick="switchView('nutri')"><div class="nav-icon">➕</div><div class="nav-label">Repas</div></div>
+    <div class="nav-item" id="navStats" onclick="switchView('stats')"><div class="nav-icon">📊</div><div class="nav-label">Suivi</div></div>
+    <div class="nav-item" id="navInfo" onclick="switchView('info')"><div class="nav-icon">⚙️</div><div class="nav-label">Réglages</div></div>
+  </div>
+</div>
+
+<script>
+const MEALS_DB = {"breakfast": [{"dish": "Œufs brouillés au beurre", "description": "3 œufs, beurre, ciboulette", "cuisine": "Française", "kcal": 280, "p": 18, "c": 2, "f": 22}, {"dish": "Omelette aux champignons", "description": "3 œufs, champignons, persil", "cuisine": "Française", "kcal": 260, "p": 19, "c": 4, "f": 18}, {"dish": "Yaourt grec & fruits rouges", "description": "Yaourt grec, framboises, myrtilles, miel", "cuisine": "Française", "kcal": 220, "p": 15, "c": 24, "f": 6}, {"dish": "Tartine jambon fromage blanc", "description": "Pain complet, jambon blanc, fromage blanc", "cuisine": "Française", "kcal": 310, "p": 22, "c": 28, "f": 8}, {"dish": "Fromage blanc & banane", "description": "Fromage blanc 0%, banane, noix", "cuisine": "Française", "kcal": 290, "p": 20, "c": 32, "f": 8}, {"dish": "Poêlée d'œufs & légumes", "description": "2 œufs, courgette, poivron, tomate", "cuisine": "Française", "kcal": 240, "p": 16, "c": 10, "f": 15}, {"dish": "Bowl protéiné matinal", "description": "Fromage blanc, flocons d'avoine, fruits secs", "cuisine": "Française", "kcal": 340, "p": 22, "c": 38, "f": 8}, {"dish": "Omelette jambon emmental", "description": "3 œufs, jambon, emmental râpé", "cuisine": "Française", "kcal": 360, "p": 28, "c": 2, "f": 26}, {"dish": "Tartine avocat œuf poché", "description": "Pain complet, avocat, œuf poché, sel fleur", "cuisine": "Française", "kcal": 340, "p": 16, "c": 26, "f": 18}, {"dish": "Bol de skyr aux fruits", "description": "Skyr nature, kiwi, fraises, graines de lin", "cuisine": "Française", "kcal": 210, "p": 18, "c": 22, "f": 4}, {"dish": "Crêpe protéinée", "description": "Farine complète, œuf, lait, jambon", "cuisine": "Française", "kcal": 320, "p": 24, "c": 30, "f": 10}, {"dish": "Pain complet œuf dur", "description": "2 tranches pain complet, 2 œufs durs, tomate", "cuisine": "Française", "kcal": 300, "p": 20, "c": 28, "f": 10}, {"dish": "Smoothie bowl protéiné", "description": "Fromage blanc, banane, granola maison", "cuisine": "Française", "kcal": 350, "p": 20, "c": 42, "f": 8}, {"dish": "Galette de sarrasin œuf", "description": "Galette sarrasin, œuf, emmental, jambon", "cuisine": "Française", "kcal": 380, "p": 24, "c": 32, "f": 14}, {"dish": "Yaourt grec granola miel", "description": "Yaourt grec, granola, miel, amandes", "cuisine": "Française", "kcal": 380, "p": 18, "c": 44, "f": 12}], "lunch": [{"dish": "Bibimbap", "description": "Riz, légumes sautés, bœuf, œuf, gochujang", "cuisine": "Coréenne", "kcal": 520, "p": 28, "c": 68, "f": 14}, {"dish": "Bulgogi bowl", "description": "Bœuf mariné sésame, riz, légumes", "cuisine": "Coréenne", "kcal": 490, "p": 34, "c": 52, "f": 14}, {"dish": "Japchae", "description": "Nouilles de patate douce, légumes, bœuf", "cuisine": "Coréenne", "kcal": 440, "p": 22, "c": 58, "f": 12}, {"dish": "Dakgalbi", "description": "Poulet sauté épicé, chou, gochujang, riz", "cuisine": "Coréenne", "kcal": 480, "p": 36, "c": 48, "f": 12}, {"dish": "Samgyeopsal bowl", "description": "Poitrine de porc grillée, riz, kimchi", "cuisine": "Coréenne", "kcal": 560, "p": 30, "c": 44, "f": 24}, {"dish": "Sundubu jjigae", "description": "Tofu soyeux, légumes, œuf, piment", "cuisine": "Coréenne", "kcal": 320, "p": 22, "c": 18, "f": 14}, {"dish": "Tteokbokki poulet", "description": "Galettes de riz, poulet, sauce gochujang", "cuisine": "Coréenne", "kcal": 460, "p": 28, "c": 62, "f": 8}, {"dish": "Doenjang jjigae & riz", "description": "Soupe miso coréen, tofu, légumes, riz", "cuisine": "Coréenne", "kcal": 380, "p": 20, "c": 52, "f": 8}, {"dish": "Donburi teriyaki poulet", "description": "Poulet teriyaki, riz, oignons verts", "cuisine": "Japonaise", "kcal": 510, "p": 36, "c": 62, "f": 10}, {"dish": "Soba aux légumes", "description": "Nouilles soba, dashi, mirin, légumes verts", "cuisine": "Japonaise", "kcal": 380, "p": 16, "c": 58, "f": 6}, {"dish": "Salmon poke bowl", "description": "Saumon cru, riz sushi, avocat, edamame", "cuisine": "Japonaise", "kcal": 520, "p": 34, "c": 54, "f": 16}, {"dish": "Oyakodon", "description": "Poulet, œuf, oignon, dashi, riz", "cuisine": "Japonaise", "kcal": 490, "p": 32, "c": 58, "f": 12}, {"dish": "Udon bouillon dashi", "description": "Udon, bouillon dashi, tofu, algues, œuf", "cuisine": "Japonaise", "kcal": 420, "p": 20, "c": 62, "f": 8}, {"dish": "Bowl tofu teriyaki", "description": "Tofu grillé, sauce teriyaki, riz, brocoli", "cuisine": "Japonaise", "kcal": 440, "p": 22, "c": 58, "f": 12}, {"dish": "Onigiri saumon", "description": "Riz vinaigré, saumon, nori", "cuisine": "Japonaise", "kcal": 350, "p": 18, "c": 52, "f": 8}, {"dish": "Gyudon", "description": "Bœuf sauté, oignons, sauce sucrée, riz", "cuisine": "Japonaise", "kcal": 520, "p": 28, "c": 62, "f": 16}, {"dish": "Riz sauté au poulet", "description": "Riz, poulet, légumes, sauce soja, gingembre", "cuisine": "Chinoise", "kcal": 480, "p": 30, "c": 58, "f": 12}, {"dish": "Mapo tofu & riz", "description": "Tofu, porc haché, sauce doubanjiang, riz", "cuisine": "Chinoise", "kcal": 440, "p": 26, "c": 48, "f": 16}, {"dish": "Nouilles sautées bœuf", "description": "Nouilles, bœuf, poivrons, sauce huître", "cuisine": "Chinoise", "kcal": 520, "p": 28, "c": 62, "f": 14}, {"dish": "Porc au caramel & riz", "description": "Porc braisé sauce soja, caramel, riz", "cuisine": "Chinoise", "kcal": 560, "p": 28, "c": 64, "f": 18}, {"dish": "Soupe wonton", "description": "Wontons porc, bouillon gingembre, légumes", "cuisine": "Chinoise", "kcal": 360, "p": 20, "c": 42, "f": 10}, {"dish": "Poulet kung pao", "description": "Poulet, cacahuètes, poivron, sauce épicée", "cuisine": "Chinoise", "kcal": 480, "p": 34, "c": 32, "f": 22}, {"dish": "Dim sum vapeur", "description": "Raviolis porc-crevette, sauce soja-gingembre", "cuisine": "Chinoise", "kcal": 380, "p": 22, "c": 42, "f": 12}, {"dish": "Pâtes carbonara légères", "description": "Pâtes complètes, lardons, œuf, parmesan", "cuisine": "Italienne", "kcal": 540, "p": 28, "c": 62, "f": 18}, {"dish": "Risotto aux champignons", "description": "Riz arborio, champignons, parmesan, thym", "cuisine": "Italienne", "kcal": 480, "p": 16, "c": 68, "f": 14}, {"dish": "Salade caprese poulet", "description": "Mozzarella, tomates, poulet grillé, basilic", "cuisine": "Italienne", "kcal": 420, "p": 36, "c": 8, "f": 24}, {"dish": "Pâtes bolognaise", "description": "Pâtes complètes, bœuf haché, tomates, basilic", "cuisine": "Italienne", "kcal": 520, "p": 30, "c": 64, "f": 14}, {"dish": "Minestrone protéiné", "description": "Soupe légumes, haricots, pâtes, parmesan", "cuisine": "Italienne", "kcal": 360, "p": 18, "c": 48, "f": 8}, {"dish": "Gnocchi sauce tomate", "description": "Gnocchi, sauce tomate, basilic, burrata", "cuisine": "Italienne", "kcal": 460, "p": 16, "c": 68, "f": 14}, {"dish": "Pho bo", "description": "Bouillon bœuf épicé, nouilles riz, herbes", "cuisine": "Vietnamienne", "kcal": 420, "p": 28, "c": 52, "f": 8}, {"dish": "Bun bo", "description": "Vermicelles, bœuf citronelle, légumes croquants", "cuisine": "Vietnamienne", "kcal": 440, "p": 26, "c": 54, "f": 10}, {"dish": "Bánh mì poulet", "description": "Baguette, poulet, légumes marinés, coriandre", "cuisine": "Vietnamienne", "kcal": 460, "p": 28, "c": 52, "f": 12}, {"dish": "Rouleaux de printemps frais", "description": "Crevettes, vermicelles, légumes, menthe", "cuisine": "Vietnamienne", "kcal": 280, "p": 18, "c": 34, "f": 4}, {"dish": "Com ga", "description": "Riz au poulet, gingembre, oignons verts", "cuisine": "Vietnamienne", "kcal": 460, "p": 32, "c": 56, "f": 8}, {"dish": "Bun cha", "description": "Porc grillé, vermicelles, herbes, sauce fish", "cuisine": "Vietnamienne", "kcal": 420, "p": 28, "c": 46, "f": 12}, {"dish": "Dal makhani & riz", "description": "Lentilles noires, beurre, crème, épices", "cuisine": "Indienne", "kcal": 480, "p": 20, "c": 64, "f": 14}, {"dish": "Poulet tikka masala", "description": "Poulet mariné yaourt, sauce tomate épicée", "cuisine": "Indienne", "kcal": 440, "p": 36, "c": 22, "f": 20}, {"dish": "Palak paneer", "description": "Fromage indien, épinards, épices, riz", "cuisine": "Indienne", "kcal": 420, "p": 18, "c": 38, "f": 22}, {"dish": "Chana masala", "description": "Pois chiches épicés, tomates, cumin, riz", "cuisine": "Indienne", "kcal": 400, "p": 16, "c": 58, "f": 10}, {"dish": "Dhal de lentilles corail", "description": "Lentilles, lait coco, curry, coriandre", "cuisine": "Indienne", "kcal": 380, "p": 18, "c": 52, "f": 10}, {"dish": "Poulet tandoori & riz", "description": "Poulet mariné épices, yaourt, riz basmati", "cuisine": "Indienne", "kcal": 460, "p": 38, "c": 44, "f": 12}, {"dish": "Bowl burrito poulet", "description": "Poulet épicé, riz, haricots, avocat, maïs", "cuisine": "Mexicaine", "kcal": 540, "p": 36, "c": 58, "f": 16}, {"dish": "Tacos bœuf", "description": "Bœuf haché épicé, maïs, cheddar, salsa", "cuisine": "Mexicaine", "kcal": 480, "p": 28, "c": 44, "f": 20}, {"dish": "Quesadillas poulet", "description": "Tortilla, poulet, poivron, cheddar, guacamole", "cuisine": "Mexicaine", "kcal": 520, "p": 32, "c": 42, "f": 22}, {"dish": "Chili con carne", "description": "Bœuf, haricots rouges, tomates, épices", "cuisine": "Mexicaine", "kcal": 440, "p": 30, "c": 38, "f": 16}, {"dish": "Bowl ceviche crevettes", "description": "Crevettes marinées citron, avocat, coriandre", "cuisine": "Mexicaine", "kcal": 320, "p": 28, "c": 14, "f": 16}, {"dish": "Salade grecque au poulet", "description": "Poulet, feta, tomates, olives, concombre", "cuisine": "Méditerranéenne", "kcal": 420, "p": 36, "c": 12, "f": 24}, {"dish": "Bowl falafel houmous", "description": "Falafels, houmous, taboulé, pain pita", "cuisine": "Méditerranéenne", "kcal": 480, "p": 18, "c": 58, "f": 18}, {"dish": "Salade niçoise", "description": "Thon, œuf, haricots verts, tomates, olives", "cuisine": "Méditerranéenne", "kcal": 380, "p": 30, "c": 14, "f": 20}, {"dish": "Shakshuka", "description": "Œufs pochés sauce tomates épicée, feta", "cuisine": "Méditerranéenne", "kcal": 320, "p": 20, "c": 18, "f": 18}, {"dish": "Poulet grillé tabboulé", "description": "Poulet citron-herbes, taboulé quinoa", "cuisine": "Méditerranéenne", "kcal": 440, "p": 38, "c": 36, "f": 12}, {"dish": "Wrap feta légumes grillés", "description": "Tortilla, feta, courgette, poivron, houmous", "cuisine": "Méditerranéenne", "kcal": 400, "p": 16, "c": 44, "f": 18}, {"dish": "Pad thai crevettes", "description": "Nouilles riz, crevettes, cacahuètes, citron", "cuisine": "Thaïlandaise", "kcal": 480, "p": 26, "c": 62, "f": 12}, {"dish": "Green curry poulet", "description": "Poulet, lait coco, légumes verts, riz", "cuisine": "Thaïlandaise", "kcal": 520, "p": 32, "c": 48, "f": 20}, {"dish": "Tom kha gai", "description": "Soupe poulet, lait coco, galangal, citronelle", "cuisine": "Thaïlandaise", "kcal": 360, "p": 24, "c": 12, "f": 22}, {"dish": "Bowl riz sauté basilic", "description": "Riz sauté, poulet haché, basilic thaï, œuf", "cuisine": "Thaïlandaise", "kcal": 460, "p": 30, "c": 54, "f": 12}, {"dish": "Salade papaye verte", "description": "Papaye, tomates cerises, cacahuètes, sauce fish", "cuisine": "Thaïlandaise", "kcal": 240, "p": 8, "c": 28, "f": 10}, {"dish": "Massaman curry", "description": "Bœuf, pommes de terre, lait coco, arachides", "cuisine": "Thaïlandaise", "kcal": 540, "p": 28, "c": 44, "f": 26}], "dinner": [{"dish": "Kimchi jjigae", "description": "Soupe kimchi, porc, tofu, riz", "cuisine": "Coréenne", "kcal": 380, "p": 22, "c": 38, "f": 14}, {"dish": "Galbi jjim", "description": "Côtes de bœuf braisées, radis, châtaignes", "cuisine": "Coréenne", "kcal": 480, "p": 34, "c": 22, "f": 28}, {"dish": "Poulet dakjuk", "description": "Bouillie de riz au poulet, gingembre", "cuisine": "Coréenne", "kcal": 320, "p": 24, "c": 38, "f": 6}, {"dish": "Samgyetang", "description": "Soupe poulet entier, ginseng, riz glutineux", "cuisine": "Coréenne", "kcal": 380, "p": 32, "c": 24, "f": 12}, {"dish": "Dubu jorim", "description": "Tofu braisé épicé, sésame, oignons verts", "cuisine": "Coréenne", "kcal": 300, "p": 18, "c": 18, "f": 16}, {"dish": "Ramen tonkotsu", "description": "Bouillon porc, nouilles, chashu, œuf mollet", "cuisine": "Japonaise", "kcal": 560, "p": 30, "c": 62, "f": 20}, {"dish": "Saumon teriyaki & riz", "description": "Filet saumon, sauce teriyaki, riz, brocoli", "cuisine": "Japonaise", "kcal": 480, "p": 36, "c": 46, "f": 16}, {"dish": "Miso soup tofu & riz", "description": "Soupe miso, tofu, wakame, riz, légumes", "cuisine": "Japonaise", "kcal": 340, "p": 18, "c": 48, "f": 8}, {"dish": "Nabe poulet légumes", "description": "Fondue japonaise, poulet, tofu, légumes", "cuisine": "Japonaise", "kcal": 360, "p": 30, "c": 24, "f": 12}, {"dish": "Curry japonais", "description": "Curry doux, poulet, pommes de terre, riz", "cuisine": "Japonaise", "kcal": 520, "p": 28, "c": 66, "f": 14}, {"dish": "Agedashi tofu", "description": "Tofu frit, bouillon dashi, daikon râpé", "cuisine": "Japonaise", "kcal": 300, "p": 16, "c": 22, "f": 14}, {"dish": "Poulet gingembre vapeur", "description": "Poulet, gingembre, sauce soja légère", "cuisine": "Chinoise", "kcal": 340, "p": 36, "c": 8, "f": 16}, {"dish": "Tofu mapo légumes", "description": "Tofu, légumes, sauce épicée, riz", "cuisine": "Chinoise", "kcal": 380, "p": 18, "c": 44, "f": 14}, {"dish": "Bœuf aux brocolis", "description": "Bœuf sauté, brocoli, sauce huître", "cuisine": "Chinoise", "kcal": 380, "p": 28, "c": 22, "f": 18}, {"dish": "Soupe aigre-douce tofu", "description": "Bouillon, tofu, champignons noirs, œuf", "cuisine": "Chinoise", "kcal": 280, "p": 16, "c": 24, "f": 10}, {"dish": "Poulet piccata", "description": "Poulet, câpres, citron, beurre, pâtes", "cuisine": "Italienne", "kcal": 460, "p": 38, "c": 36, "f": 16}, {"dish": "Frittata légumes", "description": "Œufs, courgette, poivron, parmesan", "cuisine": "Italienne", "kcal": 320, "p": 22, "c": 8, "f": 22}, {"dish": "Soupe minestrone", "description": "Légumes de saison, haricots, pâtes", "cuisine": "Italienne", "kcal": 300, "p": 14, "c": 42, "f": 6}, {"dish": "Tilapia al forno", "description": "Poisson au four, tomates, olives, câpres", "cuisine": "Italienne", "kcal": 340, "p": 34, "c": 10, "f": 16}, {"dish": "Bo kho", "description": "Ragoût bœuf citronelle, carotte, pain", "cuisine": "Vietnamienne", "kcal": 440, "p": 30, "c": 28, "f": 22}, {"dish": "Ca hap gingembre", "description": "Poisson vapeur, gingembre, sauce soja", "cuisine": "Vietnamienne", "kcal": 300, "p": 32, "c": 6, "f": 14}, {"dish": "Lemongrass chicken", "description": "Poulet citronelle, poivron, riz jasmin", "cuisine": "Vietnamienne", "kcal": 420, "p": 34, "c": 42, "f": 10}, {"dish": "Poulet saag", "description": "Poulet, épinards, épices, naan", "cuisine": "Indienne", "kcal": 420, "p": 34, "c": 26, "f": 18}, {"dish": "Dhal lentilles vertes", "description": "Lentilles, tomates, cumin, naan complet", "cuisine": "Indienne", "kcal": 380, "p": 18, "c": 52, "f": 10}, {"dish": "Crevettes masala", "description": "Crevettes, sauce tomate épicée, coriandre", "cuisine": "Indienne", "kcal": 360, "p": 30, "c": 18, "f": 16}, {"dish": "Aloo gobi", "description": "Pommes de terre, chou-fleur, curry, riz", "cuisine": "Indienne", "kcal": 340, "p": 10, "c": 54, "f": 10}, {"dish": "Fajitas poulet", "description": "Poulet, poivrons, oignons, tortilla, guac", "cuisine": "Mexicaine", "kcal": 480, "p": 34, "c": 42, "f": 18}, {"dish": "Soupe tortilla", "description": "Bouillon poulet, maïs, haricots, tortilla", "cuisine": "Mexicaine", "kcal": 360, "p": 22, "c": 40, "f": 12}, {"dish": "Ceviche poisson", "description": "Poisson blanc, citron vert, coriandre, maïs", "cuisine": "Mexicaine", "kcal": 280, "p": 28, "c": 16, "f": 8}, {"dish": "Brochettes d'agneau", "description": "Agneau mariné herbes, taboulé, tzatziki", "cuisine": "Méditerranéenne", "kcal": 460, "p": 34, "c": 22, "f": 26}, {"dish": "Loup de mer au four", "description": "Bar entier, herbes, citron, légumes", "cuisine": "Méditerranéenne", "kcal": 320, "p": 34, "c": 6, "f": 16}, {"dish": "Moussaka légère", "description": "Aubergine, bœuf, béchamel allégée", "cuisine": "Méditerranéenne", "kcal": 400, "p": 24, "c": 24, "f": 22}, {"dish": "Poulet citron origan", "description": "Poulet, citron, origan, olives, pommes de terre", "cuisine": "Méditerranéenne", "kcal": 420, "p": 34, "c": 26, "f": 16}, {"dish": "Crevettes saganaki", "description": "Crevettes, sauce tomate feta, herbes", "cuisine": "Méditerranéenne", "kcal": 340, "p": 30, "c": 12, "f": 18}, {"dish": "Red curry crevettes", "description": "Crevettes, lait coco, aubergines, riz", "cuisine": "Thaïlandaise", "kcal": 460, "p": 28, "c": 44, "f": 18}, {"dish": "Poisson vapeur citronelle", "description": "Poisson blanc, citronelle, galangal", "cuisine": "Thaïlandaise", "kcal": 300, "p": 30, "c": 8, "f": 14}, {"dish": "Larb poulet", "description": "Poulet haché, herbes, citron, sauce fish", "cuisine": "Thaïlandaise", "kcal": 320, "p": 28, "c": 12, "f": 14}, {"dish": "Pad see ew", "description": "Larges nouilles, bœuf, brocoli chinois", "cuisine": "Thaïlandaise", "kcal": 480, "p": 26, "c": 62, "f": 12}, {"dish": "Tom yum crevettes", "description": "Bouillon épicé, crevettes, champignons", "cuisine": "Thaïlandaise", "kcal": 260, "p": 22, "c": 12, "f": 10}, {"dish": "Salade composée thon", "description": "Thon, œuf, haricots verts, tomate, vinaigrette", "cuisine": "Française", "kcal": 380, "p": 30, "c": 14, "f": 20}, {"dish": "Poulet rôti légumes", "description": "Poulet, carottes, pommes de terre, herbes", "cuisine": "Française", "kcal": 440, "p": 36, "c": 28, "f": 16}, {"dish": "Steak haché salade", "description": "Steak 100g, salade verte, tomate, vinaigrette", "cuisine": "Française", "kcal": 360, "p": 28, "c": 8, "f": 22}, {"dish": "Lentilles vinaigrette", "description": "Lentilles, carottes, lardon, moutarde", "cuisine": "Française", "kcal": 400, "p": 22, "c": 44, "f": 12}]};
+
+// ── CONSTANTS ────────────────────────────────────────────
+const PHASES=[
+  {name:'Mise en mouvement',label:'Été',months:[5,6,7],poids:'~79 kg'},
+  {name:'Installation de la routine',label:'Automne',months:[8,9,10],poids:'~76 kg'},
+  {name:'Tenir le cap',label:'Hiver',months:[11,0,1],poids:'~73 kg'},
+  {name:'Récolter les fruits',label:'Printemps',months:[2,3,4],poids:'~70 kg'},
+];
+const TATTOO_HEALED=new Date('2024-07-10');
+const SWIM_OK=new Date('2024-07-20');
+const DAY_NAMES=['D','L','M','M','J','V','S'];
+const DAY_FULL=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const CUISINE_OPTIONS=['🇰🇷 Coréenne','🇯🇵 Japonaise','🇨🇳 Chinoise','🇫🇷 Française','🇮🇹 Italienne','🇮🇳 Indienne','🇲🇽 Mexicaine','🥗 Méditerranéenne','🇹🇭 Thaïlandaise','🇻🇳 Vietnamienne'];
+const DIET_OPTIONS=['Omnivore','Végétarien','Végétalien','Sans gluten','Sans lactose','Faible en glucides'];
+const AVOID_OPTIONS=['Porc','Fruits de mer','Gluten','Lactose','Noix','Épices fortes','Œufs'];
+const SLOT_LABELS=['Petit-déjeuner ☀️','Déjeuner 🌤️','Dîner 🌙'];
+const SLOT_KEYS=['breakfast','lunch','dinner'];
+
+// ── PREFS ────────────────────────────────────────────────
+function loadPrefs(){try{return JSON.parse(localStorage.getItem('prefs')||'{}');}catch{return{};}}
+function savePrefs(){
+  const cuisines=[...document.querySelectorAll('#prefCuisines .pref-chip.on')].map(c=>c.dataset.val);
+  const diet=[...document.querySelectorAll('#prefDiet .pref-chip.on')].map(c=>c.dataset.val);
+  const avoid=[...document.querySelectorAll('#prefAvoid .pref-chip.on')].map(c=>c.dataset.val);
+  localStorage.setItem('prefs',JSON.stringify({cuisines,diet,avoid}));
+  clearMealCache();
+  alert('✅ Préférences enregistrées !');
+}
+function renderPrefs(){
+  const p=loadPrefs();
+  function chips(id,opts,saved){
+    document.getElementById(id).innerHTML=opts.map(o=>`<div class="pref-chip${(saved||[]).includes(o)?' on':''}" data-val="${o}" onclick="this.classList.toggle('on')">${o}</div>`).join('');
+  }
+  chips('prefCuisines',CUISINE_OPTIONS,p.cuisines);
+  chips('prefDiet',DIET_OPTIONS,p.diet);
+  chips('prefAvoid',AVOID_OPTIONS,p.avoid);
+}
+
+// ── MEAL CACHE ───────────────────────────────────────────
+let mealCache={};
+function loadCache(){try{mealCache=JSON.parse(localStorage.getItem('mealCache')||'{}');}catch{mealCache={};}}
+function saveCache(){try{localStorage.setItem('mealCache',JSON.stringify(mealCache));}catch{}}
+function clearMealCache(){mealCache={};localStorage.removeItem('mealCache');}
+loadCache();
+
+function cacheKey(dateStr,slot){return slot?`${dateStr}_${slot}`:dateStr;}
+
+// ── API CALL ─────────────────────────────────────────────
+function getPromptContext(){
+  const p=loadPrefs();
+  const cuisines=(p.cuisines&&p.cuisines.length)?p.cuisines.join(', '):'🇰🇷 Coréenne, 🇯🇵 Japonaise, 🇨🇳 Chinoise, 🇫🇷 Française';
+  const diet=(p.diet&&p.diet.length)?p.diet.join(', '):'Omnivore';
+  const avoid=(p.avoid&&p.avoid.length)?p.avoid.join(', '):'aucun';
+  return{cuisines,diet,avoid};
+}
+
+async function callAI(prompt){
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+  });
+  if(!resp.ok)throw new Error('API error');
+  const data=await resp.json();
+  const text=data.content.find(b=>b.type==='text')?.text||'';
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
+}
+
+// Fetch full day (3 meals)
+function pickMeal(slot, exclude, prefs){
+  const all = MEALS_DB[slot] || [];
+  const p = loadPrefs();
+  const cuisines = p.cuisines && p.cuisines.length ? p.cuisines.map(c=>c.replace(/^[^a-zA-ZÀ-ÿ]+/,'').trim()) : null;
+  const avoid = p.avoid && p.avoid.length ? p.avoid : [];
+  let pool = all.filter(m => {
+    if(avoid.some(a => m.dish.toLowerCase().includes(a.toLowerCase()) || m.description.toLowerCase().includes(a.toLowerCase()))) return false;
+    if(slot === 'breakfast') return true; // always French for breakfast
+    if(cuisines && cuisines.length > 0){
+      return cuisines.some(c => m.cuisine.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(m.cuisine.toLowerCase()));
+    }
+    return true;
+  });
+  if(!pool.length) pool = all;
+  // Avoid same dish as yesterday
+  pool = pool.filter(m => !exclude.includes(m.dish));
+  if(!pool.length) pool = all;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+async function fetchDayMeals(dateStr,phase,force){
+  const key=cacheKey(dateStr);
+  if(!force&&mealCache[key])return mealCache[key];
+  // Get yesterday's dishes to avoid repetition
+  const yesterday = new Date(dateStr); yesterday.setDate(yesterday.getDate()-1);
+  const ydKey = cacheKey(toDateStr(yesterday));
+  const yd = mealCache[ydKey];
+  const exclude = yd ? [yd.breakfast?.dish, yd.lunch?.dish, yd.dinner?.dish].filter(Boolean) : [];
+  const bf = pickMeal('breakfast', exclude, null);
+  const lu = pickMeal('lunch', exclude, null);
+  const di = pickMeal('dinner', [...exclude, lu.dish], null);
+  const meals = {
+    breakfast: {...bf, protein: bf.p+'g'},
+    lunch: {...lu, protein: lu.p+'g'},
+    dinner: {...di, protein: di.p+'g'}
+  };
+  mealCache[key]=meals;
+  saveCache();
+  return meals;
+}
+
+// Fetch single meal slot
+async function fetchSingleMeal(dateStr,phase,slot){
+  const current = mealCache[cacheKey(dateStr)];
+  const exclude = current ? Object.values(current).map(m=>m.dish) : [];
+  const meal = pickMeal(slot, exclude, null);
+  return {...meal, protein: meal.p+'g'};
+}
+
+// Fetch shopping list
+async function fetchShoppingList(weekMeals){
+  const allDishes=[];
+  Object.entries(weekMeals).forEach(([date,meals])=>{
+    if(meals){
+      ['breakfast','lunch','dinner'].forEach(s=>{
+        if(meals[s])allDishes.push(`${s}: ${meals[s].dish} (${meals[s].description})`);
+      });
+    }
+  });
+  const prompt=`Tu es nutritionniste. Voici les repas de la semaine pour 2 personnes:\n${allDishes.join('\n')}
+
+Génère une liste de courses complète et consolidée pour 2 personnes, groupée par catégorie.
+Réponds UNIQUEMENT en JSON valide:
+{
+  "categories": [
+    {"name":"🥩 Viandes & Protéines","items":[{"name":"Poulet","qty":"600g"},...]},
+    {"name":"🐟 Poissons & Fruits de mer","items":[...]},
+    {"name":"🥦 Légumes","items":[...]},
+    {"name":"🍎 Fruits","items":[...]},
+    {"name":"🌾 Féculents & Céréales","items":[...]},
+    {"name":"🥛 Produits laitiers & Œufs","items":[...]},
+    {"name":"🫙 Épicerie & Condiments","items":[...]}
+  ]
+}`;
+  return await callAI(prompt);
+}
+
+// ── TAG HELPERS ──────────────────────────────────────────
+function tagClass(cuisine){
+  if(!cuisine)return'tag-other';
+  const c=cuisine.toLowerCase();
+  if(c.includes('coréen')||c.includes('korean'))return'tag-korean';
+  if(c.includes('japon')||c.includes('japan'))return'tag-japanese';
+  if(c.includes('chin'))return'tag-chinese';
+  if(c.includes('franç')||c.includes('french'))return'tag-french';
+  return'tag-other';
+}
+
+// ── RENDER SINGLE SLOT (for today view) ─────────────────
+function ytSearchUrl(dish){
+  return'https://www.youtube.com/results?search_query='+encodeURIComponent(dish+' recipe');
+}
+function renderSlotContent(m,dateStr,phase,slot,slotIdx){
+  if(!m)return`<div class="slot-loading"><div class="spinner"></div><span class="loading-text">Chargement…</span></div>`;
+  return`
+    <div class="meal-slot">
+      <div class="meal-slot-header">
+        <div class="meal-slot-left">
+          <div class="meal-time-tag">${SLOT_LABELS[slotIdx]}</div>
+          <a href="${ytSearchUrl(m.dish)}" target="_blank" style="text-decoration:none">
+            <div class="meal-dish" style="display:flex;align-items:center;gap:5px">${m.dish} <span style="font-size:11px;color:var(--muted);font-weight:400">▶ recette</span></div>
+          </a>
+          <div class="meal-desc">${m.description}</div>
+          <div class="meal-tags">
+            ${m.cuisine?`<span class="meal-tag ${tagClass(m.cuisine)}">${m.cuisine}</span>`:''}
+            ${m.kcal?`<span class="meal-tag tag-protein">🔥 ${m.kcal} kcal</span>`:''}
+            ${m.p?`<span class="meal-tag tag-protein">🥩 ${m.p}g prot</span>`:''}
+          </div>
+        </div>
+        <button class="meal-refresh-single" onclick="refreshSingleMeal('${dateStr}',${phase},'${slot}',${slotIdx})" title="Autre idée">↻</button>
+      </div>
+    </div>`;
+}
+
+async function refreshSingleMeal(dateStr,phase,slot,slotIdx){
+  const elId=`slot_${dateStr}_${slot}`;
+  const el=document.getElementById(elId);
+  if(!el)return;
+  const btn=el.querySelector('.meal-refresh-single');
+  if(btn){btn.classList.add('loading-single');btn.textContent='…';}
+  try{
+    const meal=await fetchSingleMeal(dateStr,phase,slot);
+    // update cache
+    if(mealCache[cacheKey(dateStr)]){
+      mealCache[cacheKey(dateStr)][slot]=meal;
+      saveCache();
+    }
+    el.outerHTML=`<div id="slot_${dateStr}_${slot}">${renderSlotContent(meal,dateStr,phase,slot,slotIdx)}</div>`;
+  }catch{
+    if(btn){btn.classList.remove('loading-single');btn.textContent='↻';}
+  }
+}
+
+// ── RENDER TODAY ─────────────────────────────────────────
+let selectedDate=new Date();selectedDate.setHours(0,0,0,0);
+let currentDateStr='';let currentPhase=0;
+
+function getPhase(date){const m=date.getMonth();if([5,6,7].includes(m))return 0;if([8,9,10].includes(m))return 1;if([11,0,1].includes(m))return 2;return 3;}
+function toDateStr(date){return date.toISOString().split('T')[0];}
+
+async function renderDay(date){
+  const dateStr=toDateStr(date);
+  const phase=getPhase(date);
+  currentDateStr=dateStr;currentPhase=phase;
+  const ph=PHASES[phase];
+  const dow=date.getDay();
+  const isTattoo=date>=new Date('2024-06-20')&&date<TATTOO_HEALED;
+  // Muscu 2x/week starts in Autumn (phase 2+), not during summer
+  const summerMonth=[5,6,7].includes(date.getMonth());
+  const hasSport=!summerMonth;
+  const sportType=hasSport?(dow===1?'A':dow===4?'B':null):null;
+  const hasAqua=date>=SWIM_OK&&dow===6;
+  const tips=['💧 Pense à boire 1,5 L d\'eau aujourd\'hui.','🥚 Une bonne source de protéines à chaque repas.','😴 Le sommeil est aussi important que le sport.','📏 Comment tu te sens dans tes vêtements > la balance.','🌿 Le yoga du soir aide à mieux dormir.','💪 Après la muscu, protéines dans l\'heure qui suit.','🎯 Régularité > intensité — toujours.'];
+  const tip=isTattoo?'🎨 Tatouage en cicatrisation — pas de natation ni pompes. Marche douce, vélo d\'appartement léger et yoga seulement.':tips[date.getDate()%tips.length];
+
+  let html=`
+    <div class="phase-banner">
+      <div><div class="phase-name">${ph.label} — ${ph.name}</div><div class="phase-week">${DAY_FULL[dow]}</div></div>
+      <div><div class="phase-poids-val">${ph.poids}</div><div class="phase-poids-label">objectif phase</div></div>
+    </div>
+    <div class="tip">${tip}</div>`;
+
+  if(sportType){
+    const exosA=['Hip thrust — 4×12','Squat bulgare — 3×10 par jambe','Dead bug — 3×10','Gainage latéral — 3×25 sec','Pont fessier — 3×15'];
+    const exosB=['Rowing haltères — 3×12','Développé épaules — 3×12','Pompes — 3×10-15','Curl biceps — 3×12','Step-up cardio — 3×45 sec'];
+    const exos=sportType==='A'?exosA:exosB;
+    const label=sportType==='A'?'Séance A — bas du corps':'Séance B — haut du corps';
+    html+=`<p class="section-title">💪 Sport du jour</p>
+    <div class="card" style="margin-bottom:8px">
+      <div class="card-header"><div class="card-icon" style="background:var(--blue-light)">🏋️</div><div><div class="card-label">${label}</div><div class="card-sub">40 min · maison ou salle</div></div></div>
+      <div class="checklist">${exos.map(e=>`<div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-tick">✓</span></div><div class="check-text">${e}</div></div>`).join('')}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;padding:0 2px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap">OU à la place</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:var(--amber-light)">🚴</div><div><div class="card-label">Vélo d'appartement</div><div class="card-sub">Si t'as pas l'énergie pour la muscu</div></div></div>
+      <div class="activity-list">
+        <div class="activity-item"><div class="activity-dot dot-amber" style="background:var(--amber)"></div>30-45 min à allure modérée (tu peux parler sans trop d'effort)</div>
+        <div class="activity-item"><div class="activity-dot dot-amber" style="background:var(--amber)"></div>Ou 20 min avec 3 intervalles de 2 min plus intenses si tu veux booster</div>
+        <div class="activity-item"><div class="activity-dot dot-amber" style="background:var(--amber)"></div>Idéal en regardant une série — le temps passe vite</div>
+      </div>
+    </div>`;
+  }
+
+  // On non-sport days, show walk/bike option
+  if(!sportType && dow!==0){
+    html+=`<p class="section-title">🚶 Cardio du jour</p>
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:var(--amber-light)">🚴</div><div><div class="card-label">Marche ou vélo d'appartement</div><div class="card-sub">Au choix — selon la météo et l'envie</div></div></div>
+      <div class="activity-list">
+        <div class="activity-item"><div class="activity-dot" style="background:var(--amber)"></div>🚶 Marche 25-30 min dehors (tôt le matin ou après 19h l'été)</div>
+        <div class="activity-item"><div class="activity-dot" style="background:var(--amber)"></div>🚴 Vélo d'appartement 25-30 min à allure tranquille</div>
+        <div class="activity-item"><div class="activity-dot" style="background:var(--amber)"></div>Les deux comptent pareil — choisis selon ton énergie</div>
+      </div>
+    </div>`;
+  }
+
+  const yogaFocuses=['Chat-vache + enfant + torsion allongée — 20 min','Chat-vache + guerrier 1 & 2 + enfant — 20 min','Guerrier 1 & 2 + chaise + torsion — 25 min','Séance complète équilibrée — 25 min'];
+  html+=`<p class="section-title">🧘 Yoga</p><div class="card"><div class="card-header"><div class="card-icon" style="background:var(--purple-light)">🧘</div><div><div class="card-label">Lombaires & mobilité</div><div class="card-sub">Matin ou soir · 20-25 min</div></div></div><div class="activity-list"><div class="activity-item"><div class="activity-dot dot-purple"></div>${yogaFocuses[phase]}</div><div class="activity-item"><div class="activity-dot dot-purple"></div><a href="https://www.youtube.com/watch?v=XeXz8fIZDCE" target="_blank" style="color:var(--purple);text-decoration:none;font-weight:500">Yoga for Lower Back Pain ↗</a> · <a href="https://www.youtube.com/watch?v=r7xsYgTeM2Q" target="_blank" style="color:var(--purple);text-decoration:none;font-weight:500">Sunrise 15 min ↗</a></div></div></div>`;
+
+  if(hasAqua)html+=`<p class="section-title">🏊 Bonus</p><div class="card"><div class="card-header"><div class="card-icon" style="background:var(--green-light)">🏊</div><div><div class="card-label">Aquagym ou natation</div><div class="card-sub">Si l'envie est là</div></div></div><div class="activity-list"><div class="activity-item"><div class="activity-dot dot-green"></div>Vélo aquatique, ciseaux horizontaux — zéro impact dos</div></div></div>`;
+
+  if(dow===0)html+=`<div class="rest-card"><div style="font-size:36px;margin-bottom:10px">🛌</div><div style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:6px">Journée repos</div><div style="font-size:13px;color:var(--muted);line-height:1.5">Le corps construit le muscle au repos. Balade libre si envie.</div></div>`;
+
+  // Meals skeleton — slots rendered individually
+  const cached=mealCache[cacheKey(dateStr)];
+  html+=`<p class="section-title">🍱 Repas du jour</p><div class="meal-card-ai">`;
+  SLOT_KEYS.forEach((slot,i)=>{
+    const m=cached?cached[slot]:null;
+    html+=`<div id="slot_${dateStr}_${slot}">${renderSlotContent(m,dateStr,phase,slot,i)}</div>`;
+  });
+  html+=`</div>`;
+
+  const stepsData=loadSteps(dateStr);
+  const stepsPct=stepsData?Math.min(100,Math.round(stepsData/8000*100)):0;
+  const stepsDisplay=stepsData?stepsData.toLocaleString('fr-FR'):'—';
+  html+=`<p class="section-title">✅ Habitudes du jour</p><div class="card"><div class="checklist">
+    <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-tick">✓</span></div><div class="check-text">1,5 L d'eau</div></div>
+    <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-tick">✓</span></div><div class="check-text">Légumes à chaque repas</div></div>
+    <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-tick">✓</span></div><div class="check-text">Pas de sodas</div></div>
+    <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-tick">✓</span></div><div class="check-text">Protéines à chaque repas</div></div>
+    <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-tick">✓</span></div><div class="check-text">Yoga fait ✓</div></div>
+    ${!sportType&&dow!==0?'<div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-tick">✓</span></div><div class="check-text">🚴 Cardio fait (marche ou vélo)</div></div>':''}
+    ${sportType?'<div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-tick">✓</span></div><div class="check-text">Séance muscu faite ✓</div></div>':''}
+  </div>
+  <div style="margin-top:10px;border-top:1px solid var(--bg);padding-top:10px;">
+    <div class="steps-item">
+      <div class="steps-icon">🦶</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span class="steps-label">Pas aujourd'hui</span>
+          <div class="steps-input-wrap">
+            <input type="number" class="steps-input" id="stepsInput" placeholder="${stepsDisplay}" min="0" max="99999" onclick="event.stopPropagation()">
+            <button class="steps-save" onclick="event.stopPropagation();saveSteps('${dateStr}')">OK</button>
+          </div>
+        </div>
+        <div class="steps-bar-wrap"><div class="steps-bar" id="stepsBar" style="width:${stepsPct}%"></div></div>
+        <div class="steps-meta"><span>${stepsData?stepsData.toLocaleString('fr-FR')+' pas':''}</span><span>Objectif : 8 000 pas</span></div>
+      </div>
+    </div>
+  </div>
+  </div>`;
+
+  document.getElementById('dayContent').innerHTML=html;
+
+  // Load meals if not cached
+  if(!cached){
+    try{
+      const meals=await fetchDayMeals(dateStr,phase,false);
+      SLOT_KEYS.forEach((slot,i)=>{
+        const el=document.getElementById(`slot_${dateStr}_${slot}`);
+        if(el)el.innerHTML=renderSlotContent(meals[slot],dateStr,phase,slot,i);
+      });
+    }catch{
+      SLOT_KEYS.forEach((slot,i)=>{
+        const el=document.getElementById(`slot_${dateStr}_${slot}`);
+        if(el)el.innerHTML=`<div class="meal-slot"><div class="meal-time-tag">${SLOT_LABELS[i]}</div><div style="font-size:13px;color:var(--muted);padding:4px 0">⚠️ Erreur — <span style="color:var(--green);cursor:pointer" onclick="refreshSingleMeal('${dateStr}',${phase},'${slot}',${i})">réessayer</span></div></div>`;
+      });
+    }
+  }
+}
+
+// ── WEEK VIEW ────────────────────────────────────────────
+let weekViewMode='meals'; // 'meals' | 'shopping'
+let weekShoppingData=null;
+let weekMealsData={};
+let boughtItems=new Set();
+
+function getWeekDates(){
+  const today=new Date();today.setHours(0,0,0,0);
+  const dow=today.getDay();
+  const monday=new Date(today);monday.setDate(today.getDate()-(dow===0?6:dow-1));
+  return Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d;});
+}
+
+async function renderWeekView(mode){
+  weekViewMode=mode||weekViewMode;
+  const container=document.getElementById('weekViewContent');
+  const dates=getWeekDates();
+
+  if(weekViewMode==='shopping'){
+    await renderShoppingView(container,dates);
+    return;
+  }
+
+  // MEALS view
+  let html=`
+    <div class="shop-actions">
+      <button class="shop-btn primary" onclick="renderWeekView('meals')">📅 Repas</button>
+      <button class="shop-btn" onclick="renderWeekView('shopping')">🛒 Liste de courses</button>
+    </div>`;
+
+  for(const date of dates){
+    const dateStr=toDateStr(date);
+    const phase=getPhase(date);
+    const meals=weekMealsData[dateStr]||mealCache[cacheKey(dateStr)];
+    const isLoading=!meals;
+    html+=`<div class="week-meal-day">
+      <div class="week-day-header">
+        <span class="week-day-name">${DAY_FULL[date.getDay()]} ${date.getDate()}</span>
+        <button class="week-day-refresh" onclick="refreshWeekDay('${dateStr}',${phase})">↻ Tout changer</button>
+      </div>`;
+    if(isLoading){
+      html+=`<div id="wday_${dateStr}" style="padding:16px;display:flex;align-items:center;gap:8px"><div class="spinner"></div><span style="font-size:13px;color:var(--muted)">Chargement…</span></div>`;
+    }else{
+      html+=renderWeekDaySlots(meals,dateStr,phase);
+    }
+    html+=`</div>`;
+  }
+
+  container.innerHTML=html;
+
+  // Load missing days
+  for(const date of dates){
+    const dateStr=toDateStr(date);
+    const phase=getPhase(date);
+    if(!weekMealsData[dateStr]&&!mealCache[cacheKey(dateStr)]){
+      const el=document.getElementById(`wday_${dateStr}`);
+      try{
+        const meals=await fetchDayMeals(dateStr,phase,false);
+        weekMealsData[dateStr]=meals;
+        if(el)el.outerHTML=renderWeekDaySlots(meals,dateStr,phase);
+      }catch{
+        if(el)el.outerHTML=`<div style="padding:12px 16px;font-size:13px;color:var(--muted)">⚠️ Erreur <span style="color:var(--green);cursor:pointer" onclick="refreshWeekDay('${dateStr}',${phase})">réessayer</span></div>`;
+      }
+    }else if(mealCache[cacheKey(dateStr)]){
+      weekMealsData[dateStr]=mealCache[cacheKey(dateStr)];
+    }
+  }
+}
+
+function renderWeekDaySlots(meals,dateStr,phase){
+  return SLOT_KEYS.map((slot,i)=>{
+    const m=meals?meals[slot]:null;
+    if(!m)return'';
+    return`<div class="week-slot" id="wslot_${dateStr}_${slot}">
+      <div class="week-slot-left">
+        <div class="week-slot-time">${['☀️ Petit-déj','🌤️ Déjeuner','🌙 Dîner'][i]}</div>
+        <a href="${ytSearchUrl(m.dish)}" target="_blank" style="text-decoration:none;color:inherit">
+          <div class="week-slot-dish" style="display:flex;align-items:center;gap:5px">${m.dish} <span style="font-size:10px;color:var(--muted);font-weight:400">▶</span></div>
+        </a>
+        <div style="font-size:12px;color:var(--muted)">${m.cuisine||''} ${m.kcal?'· 🔥'+m.kcal+' kcal':''} ${m.p?'· 🥩'+m.p+'g':''}</div>
+      </div>
+      <button class="week-slot-refresh" onclick="refreshWeekSlot('${dateStr}',${phase},'${slot}',${i})">↻</button>
+    </div>`;
+  }).join('');
+}
+
+async function refreshWeekDay(dateStr,phase){
+  const el=document.getElementById(`wday_${dateStr}`);
+  // Find the parent day container and replace slots
+  const dayEl=document.querySelector(`#weekViewContent .week-meal-day [id^="wday_${dateStr}"]`)?.parentElement
+    || [...document.querySelectorAll('#weekViewContent .week-meal-day')].find(d=>d.innerHTML.includes(`wday_${dateStr}`)||d.innerHTML.includes(`wslot_${dateStr}`));
+  if(dayEl){
+    const slots=dayEl.querySelectorAll('.week-slot');
+    slots.forEach(s=>{s.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><div class="spinner"></div><span style="font-size:12px;color:var(--muted)">…</span></div>`;});
+  }
+  try{
+    const meals=await fetchDayMeals(dateStr,phase,true);
+    weekMealsData[dateStr]=meals;
+    if(dayEl){
+      SLOT_KEYS.forEach((slot,i)=>{
+        const s=document.getElementById(`wslot_${dateStr}_${slot}`);
+        if(s){
+          const m=meals[slot];
+          s.innerHTML=`<div class="week-slot-left"><div class="week-slot-time">${['☀️ Petit-déj','🌤️ Déjeuner','🌙 Dîner'][i]}</div><a href="${ytSearchUrl(m.dish)}" target="_blank" style="text-decoration:none;color:inherit"><div class="week-slot-dish" style="display:flex;align-items:center;gap:5px">${m.dish} <span style="font-size:10px;color:var(--muted)">▶</span></div></a><div style="font-size:12px;color:var(--muted)">${m.cuisine||''} ${m.protein?'· '+m.protein:''}</div></div><button class="week-slot-refresh" onclick="refreshWeekSlot('${dateStr}',${phase},'${slot}',${i})">↻</button>`;
+        }
+      });
+    }
+  }catch{}
+}
+
+async function refreshWeekSlot(dateStr,phase,slot,slotIdx){
+  const el=document.getElementById(`wslot_${dateStr}_${slot}`);
+  if(!el)return;
+  const btn=el.querySelector('.week-slot-refresh');
+  if(btn){btn.textContent='…';btn.disabled=true;}
+  try{
+    const meal=await fetchSingleMeal(dateStr,phase,slot);
+    if(weekMealsData[dateStr])weekMealsData[dateStr][slot]=meal;
+    if(mealCache[cacheKey(dateStr)])mealCache[cacheKey(dateStr)][slot]=meal;
+    saveCache();
+    el.innerHTML=`<div class="week-slot-left"><div class="week-slot-time">${['☀️ Petit-déj','🌤️ Déjeuner','🌙 Dîner'][slotIdx]}</div><a href="${ytSearchUrl(meal.dish)}" target="_blank" style="text-decoration:none;color:inherit"><div class="week-slot-dish" style="display:flex;align-items:center;gap:5px">${meal.dish} <span style="font-size:10px;color:var(--muted)">▶</span></div></a><div style="font-size:12px;color:var(--muted)">${meal.cuisine||''} ${meal.protein?'· '+meal.protein:''}</div></div><button class="week-slot-refresh" onclick="refreshWeekSlot('${dateStr}',${phase},'${slot}',${slotIdx})">↻</button>`;
+    // Also refresh today slot if same date
+    const todaySlot=document.getElementById(`slot_${dateStr}_${slot}`);
+    if(todaySlot)todaySlot.innerHTML=renderSlotContent(meal,dateStr,phase,slot,slotIdx);
+  }catch{if(btn){btn.textContent='↻';btn.disabled=false;}}
+}
+
+// ── SHOPPING ─────────────────────────────────────────────
+async function renderShoppingView(container,dates){
+  container.innerHTML=`
+    <div class="shop-actions">
+      <button class="shop-btn" onclick="renderWeekView('meals')">📅 Repas</button>
+      <button class="shop-btn primary" onclick="renderWeekView('shopping')">🛒 Liste de courses</button>
+    </div>
+    <div id="shopContent"><div class="shop-loading"><div class="big-spinner"></div><span>Génération de la liste pour 2 personnes…</span></div></div>`;
+
+  // collect all meals
+  const allMeals={};
+  for(const date of dates){
+    const dateStr=toDateStr(date);
+    allMeals[dateStr]=weekMealsData[dateStr]||mealCache[cacheKey(dateStr)]||null;
+  }
+
+  const hasMeals=Object.values(allMeals).some(m=>m!==null);
+  if(!hasMeals){
+    document.getElementById('shopContent').innerHTML=`<div class="card" style="text-align:center;padding:24px"><div style="font-size:32px;margin-bottom:10px">📅</div><div style="font-size:14px;color:var(--muted)">Génère d'abord les repas de la semaine en allant dans l'onglet "Repas".</div></div>`;
+    return;
+  }
+
+  try{
+    const shopData=await fetchShoppingList(allMeals);
+    weekShoppingData=shopData;
+    renderShoppingList(shopData);
+  }catch{
+    document.getElementById('shopContent').innerHTML=`<div style="padding:16px;font-size:13px;color:var(--muted)">⚠️ Erreur lors de la génération. <span style="color:var(--green);cursor:pointer" onclick="renderWeekView('shopping')">Réessayer</span></div>`;
+  }
+}
+
+function renderShoppingList(shopData){
+  let html=`<div class="shop-actions" style="margin-bottom:4px">
+    <button class="shop-btn" onclick="clearBought()" style="font-size:12px">🗑 Effacer les cochés</button>
+    <button class="shop-btn" onclick="renderWeekView('shopping')" style="font-size:12px">↻ Regénérer</button>
+  </div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:14px;padding:0 2px">Pour 2 personnes · semaine en cours · appuie pour cocher</div>`;
+
+  shopData.categories.forEach(cat=>{
+    html+=`<div class="shop-section">
+      <div class="shop-category">${cat.name}</div>
+      <div class="shop-items">
+        ${cat.items.map((item,idx)=>{
+          const id=`si_${cat.name.replace(/[^a-z]/gi,'')}_${idx}`;
+          const bought=boughtItems.has(id);
+          return`<div class="shop-item${bought?' bought':''}" id="${id}" onclick="toggleShopItem('${id}')">
+            <div class="shop-cb"><span class="shop-tick">✓</span></div>
+            <span class="shop-name">${item.name}</span>
+            <span class="shop-qty">${item.qty}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('shopContent').innerHTML=html;
+}
+
+function toggleShopItem(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.classList.toggle('bought');
+  if(boughtItems.has(id))boughtItems.delete(id);else boughtItems.add(id);
+}
+function clearBought(){
+  boughtItems.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('bought');});
+  boughtItems.clear();
+}
+
+// ── WEEK NAV ─────────────────────────────────────────────
+function buildWeekNav(){
+  const nav=document.getElementById('weekNav');
+  const today=new Date();today.setHours(0,0,0,0);
+  nav.innerHTML='';
+  for(let i=-3;i<=6;i++){
+    const d=new Date(today);d.setDate(today.getDate()+i);
+    const dow=d.getDay();
+    const hasSport=d>=TATTOO_HEALED&&(dow===1||dow===4);
+    const isActive=d.getTime()===selectedDate.getTime();
+    const pill=document.createElement('div');
+    pill.className='day-pill'+(isActive?' active':'')+(hasSport?' has-activity':'');
+    pill.innerHTML=`<span class="day-letter">${DAY_NAMES[dow]}</span><span class="day-num">${d.getDate()}</span>`;
+    pill.onclick=()=>{selectedDate=d;buildWeekNav();renderDay(d);document.querySelector('.content').scrollTop=0;};
+    nav.appendChild(pill);
+  }
+  const active=nav.querySelector('.active');
+  if(active)active.scrollIntoView({inline:'center',behavior:'smooth'});
+}
+
+// ── STATS ────────────────────────────────────────────────
+function loadWeights(){try{return JSON.parse(localStorage.getItem('weights')||'[]');}catch{return[];}}
+function saveWeight(){
+  const val=parseFloat(document.getElementById('weightInput').value);
+  if(!val||val<40||val>200)return;
+  const weights=loadWeights();
+  weights.unshift({date:new Date().toLocaleDateString('fr-FR'),val});
+  localStorage.setItem('weights',JSON.stringify(weights.slice(0,52)));
+  document.getElementById('weightInput').value='';
+  renderStats();
+}
+function renderStats(){
+  const weights=loadWeights();
+  const current=weights.length?weights[0].val:81.4;
+  const lost=Math.max(0,81.4-current).toFixed(1);
+  const pct=Math.min(100,Math.round(Math.max(0,(81.4-current)/(81.4-70)*100)));
+  document.getElementById('statPoids').textContent=current.toFixed(1);
+  document.getElementById('statPerdu').textContent=lost;
+  document.getElementById('statSemaines').textContent=Math.floor((new Date()-new Date('2024-06-01'))/604800000);
+  document.getElementById('progressBar').style.width=pct+'%';
+  document.getElementById('progressPct').textContent=pct+'%';
+  const hist=document.getElementById('weightHistory');
+  hist.innerHTML=weights.map((w,i)=>{
+    const diff=i<weights.length-1?(w.val-weights[i+1].val).toFixed(1):null;
+    return`<div class="weight-row"><span class="weight-date">${w.date}</span><span style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">${w.val} kg</span>${diff!==null?`<span class="${diff<0?'diff-down':'diff-up'}" style="font-size:12px">${diff>0?'+':''}${diff}</span>`:''}</span></div>`;
+  }).join('')||'<div style="font-size:13px;color:var(--muted);padding:8px 0">Aucune entrée pour l\'instant</div>';
+}
+
+// ── MISC ─────────────────────────────────────────────────
+function toggleCheck(el){el.classList.toggle('checked');}
+function switchView(v){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  const key=v.charAt(0).toUpperCase()+v.slice(1);
+  document.getElementById('view'+key).classList.add('active');
+  document.getElementById('nav'+key).classList.add('active');
+  if(v==='stats'){renderStats();renderStepsStats();renderSnackStats();renderNutriStats();}
+  if(v==='nutri'){nutriSelectedDate=new Date();nutriSelectedDate.setHours(0,0,0,0);renderNutriView();}
+  if(v==='week')renderWeekView('meals');
+  if(v==='info')renderPrefs();
+  document.querySelector('.content').scrollTop=0;
+}
+function updateBadge(){
+  document.getElementById('todayBadge').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
+}
+
+// ── NUTRITION TRACKER ────────────────────────────────────
+function loadNutriAll(){try{return JSON.parse(localStorage.getItem('nutriLog')||'{}');}catch{return{};}}
+function loadNutri(dateStr){const all=loadNutriAll();return all[dateStr]||{breakfast:[],lunch:[],dinner:[]};}
+function saveNutriForDay(dateStr,data){
+  const all=loadNutriAll();
+  const empty=data.breakfast.length===0&&data.lunch.length===0&&data.dinner.length===0;
+  if(empty){delete all[dateStr];}else{all[dateStr]=data;}
+  const keys=Object.keys(all).sort().slice(-90);
+  const trimmed={};keys.forEach(k=>trimmed[k]=all[k]);
+  localStorage.setItem('nutriLog',JSON.stringify(trimmed));
+}
+
+let nutriSelectedDate=new Date();nutriSelectedDate.setHours(0,0,0,0);
+
+function sumMacros(items){
+  return items.reduce((acc,x)=>({kcal:acc.kcal+(x.kcal||0),p:acc.p+(x.p||0),c:acc.c+(x.c||0),f:acc.f+(x.f||0)}),{kcal:0,p:0,c:0,f:0});
+}
+
+function renderNutriView(){
+  const dateStr=toDateStr(nutriSelectedDate);
+  const data=loadNutri(dateStr);
+  const allItems=[...data.breakfast,...data.lunch,...data.dinner];
+  const dayTotal=sumMacros(allItems);
+  const slots=[['breakfast','☀️ Petit-déjeuner'],['lunch','🌤️ Déjeuner'],['dinner','🌙 Dîner']];
+  const today=new Date();today.setHours(0,0,0,0);
+  const isToday=nutriSelectedDate.getTime()===today.getTime();
+
+  let html=`<p class="section-title">➕ Mes repas — ${DAY_FULL[nutriSelectedDate.getDay()]} ${nutriSelectedDate.getDate()}</p>`;
+
+  // Day total banner
+  html+=`<div class="nutri-day-total">
+    <div class="nutri-total-kcal">${dayTotal.kcal} kcal</div>
+    <div class="nutri-total-label">Total du jour · objectif ~1600 kcal</div>
+    <div class="nutri-total-macros">
+      <div class="nutri-tm"><div class="nutri-tm-val">${dayTotal.p}g</div><div class="nutri-tm-label">Protéines</div></div>
+      <div class="nutri-tm"><div class="nutri-tm-val">${dayTotal.c}g</div><div class="nutri-tm-label">Glucides</div></div>
+      <div class="nutri-tm"><div class="nutri-tm-val">${dayTotal.f}g</div><div class="nutri-tm-label">Lipides</div></div>
+    </div>
+  </div>`;
+
+  // Import from AI meals button (only if AI meals exist for this day)
+  const aiMeals=mealCache[cacheKey(dateStr)]||weekMealsData[dateStr];
+  if(aiMeals){
+    html+=`<button class="nutri-import-btn" onclick="importAiMeals('${dateStr}')">📥 Importer les repas suggérés du jour</button>`;
+  }
+
+  slots.forEach(([key,label])=>{
+    const items=data[key];
+    html+=`<div class="nutri-meal-block">
+      <div class="nutri-meal-title">${label}</div>
+      <div class="nutri-input-row">
+        <input type="text" class="nutri-input" id="nutriInput_${key}" placeholder="ex: bol de riz + poulet grillé">
+        <button class="nutri-add-btn" id="nutriBtn_${key}" onclick="addNutriItem('${dateStr}','${key}')">+</button>
+      </div>
+      <div id="nutriList_${key}">${renderNutriItems(items,dateStr,key)}</div>
+    </div>`;
+  });
+
+  document.getElementById('nutriViewContent').innerHTML=html;
+}
+
+function renderNutriItems(items,dateStr,slot){
+  if(!items.length)return'';
+  return items.map((x,i)=>`
+    <div class="nutri-entry">
+      <div class="nutri-entry-top">
+        <span class="nutri-entry-name">${x.name}</span>
+        <span class="nutri-entry-kcal">${x.kcal} kcal</span>
+        <button class="nutri-del" onclick="deleteNutriItem('${dateStr}','${slot}',${i})">×</button>
+      </div>
+      <div class="nutri-macros">
+        <span class="macro-pill macro-p">P ${x.p}g</span>
+        <span class="macro-pill macro-c">G ${x.c}g</span>
+        <span class="macro-pill macro-f">L ${x.f}g</span>
+      </div>
+    </div>`).join('');
+}
+
+function deleteNutriItem(dateStr,slot,idx){
+  const data=loadNutri(dateStr);
+  data[slot].splice(idx,1);
+  saveNutriForDay(dateStr,data);
+  renderNutriView();
+  renderNutriStats();
+}
+
+async function addNutriItem(dateStr,slot){
+  const input=document.getElementById(`nutriInput_${slot}`);
+  const btn=document.getElementById(`nutriBtn_${slot}`);
+  const val=(input?input.value:'').trim();
+  if(!val)return;
+  input.value='';
+  btn.disabled=true;btn.textContent='…';
+  const listEl=document.getElementById(`nutriList_${slot}`);
+  if(listEl){
+    const ghost=document.createElement('div');
+    ghost.className='nutri-estimating';ghost.id=`nutriGhost_${slot}`;
+    ghost.innerHTML=`<div class="spinner"></div><span>Estimation de "${val}"…</span>`;
+    listEl.appendChild(ghost);
+  }
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:150,
+        messages:[{role:'user',content:`Estime les valeurs nutritionnelles de ce repas: "${val}". Réponds UNIQUEMENT en JSON: {"name":"description courte","kcal":entier,"p":grammes_proteines_entier,"c":grammes_glucides_entier,"f":grammes_lipides_entier}. Portion standard si non précisé.`}]
+      })
+    });
+    const apiData=await resp.json();
+    const text=apiData.content.find(b=>b.type==='text')?.text||'';
+    const result=JSON.parse(text.replace(/```json|```/g,'').trim());
+    const data=loadNutri(dateStr);
+    data[slot].push({name:result.name||val,kcal:Math.round(result.kcal)||0,p:Math.round(result.p)||0,c:Math.round(result.c)||0,f:Math.round(result.f)||0});
+    saveNutriForDay(dateStr,data);
+  }catch{
+    const data=loadNutri(dateStr);
+    data[slot].push({name:val,kcal:0,p:0,c:0,f:0});
+    saveNutriForDay(dateStr,data);
+  }finally{
+    btn.disabled=false;btn.textContent='+';
+    renderNutriView();
+    renderNutriStats();
+  }
+}
+
+async function importAiMeals(dateStr){
+  const aiMeals=mealCache[cacheKey(dateStr)]||weekMealsData[dateStr];
+  if(!aiMeals)return;
+  const btn=document.querySelector('.nutri-import-btn');
+  if(btn){btn.disabled=true;btn.textContent='Import en cours…';}
+  const slotMap={breakfast:'breakfast',lunch:'lunch',dinner:'dinner'};
+  const data=loadNutri(dateStr);
+  for(const[key]of Object.entries(slotMap)){
+    const meal=aiMeals[key];
+    if(!meal)continue;
+    try{
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:150,
+          messages:[{role:'user',content:`Estime les valeurs nutritionnelles de: "${meal.dish} (${meal.description})". Réponds UNIQUEMENT en JSON: {"name":"${meal.dish}","kcal":entier,"p":entier,"c":entier,"f":entier}.`}]})
+      });
+      const apiData=await resp.json();
+      const text=apiData.content.find(b=>b.type==='text')?.text||'';
+      const r=JSON.parse(text.replace(/```json|```/g,'').trim());
+      data[key].push({name:r.name||meal.dish,kcal:Math.round(r.kcal)||0,p:Math.round(r.p)||0,c:Math.round(r.c)||0,f:Math.round(r.f)||0});
+    }catch{}
+  }
+  saveNutriForDay(dateStr,data);
+  renderNutriView();
+  renderNutriStats();
+}
+
+function renderNutriStats(){
+  const el=document.getElementById('nutriStatsSection');
+  if(!el)return;
+  const all=loadNutriAll();
+  const entries=Object.entries(all).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,14);
+  if(!entries.length){
+    el.innerHTML=`<div style="font-size:13px;color:var(--muted);padding:8px 0">Aucun repas enregistré. Va dans l'onglet ➕ Repas pour commencer.</div>`;
+    return;
+  }
+  el.innerHTML=entries.map(([date,data])=>{
+    const slots=[['breakfast','☀️'],['lunch','🌤️'],['dinner','🌙']];
+    const allItems=[...data.breakfast,...data.lunch,...data.dinner];
+    const tot=sumMacros(allItems);
+    return`<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:500">${date}</span>
+        <span style="font-size:13px;font-weight:500;color:var(--green-dark)">${tot.kcal} kcal</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <span class="macro-pill macro-p">P ${tot.p}g</span>
+        <span class="macro-pill macro-c">G ${tot.c}g</span>
+        <span class="macro-pill macro-f">L ${tot.f}g</span>
+      </div>
+      ${slots.map(([k,emoji])=>{
+        if(!data[k].length)return'';
+        const s=sumMacros(data[k]);
+        return`<div style="font-size:12px;color:var(--text);padding:3px 0;border-top:1px solid var(--bg)"><span style="color:var(--muted)">${emoji} </span>${data[k].map(x=>x.name).join(', ')} <span style="color:var(--muted)">· ${s.kcal} kcal</span></div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ── SNACKS ───────────────────────────────────────────────
+function loadSnacksAll(){try{return JSON.parse(localStorage.getItem('snackLog')||'{}');}catch{return{};}}
+function loadSnacks(dateStr){const all=loadSnacksAll();return all[dateStr]||[];}
+function saveSnacksForDay(dateStr,snacks){
+  const all=loadSnacksAll();
+  if(snacks.length===0){delete all[dateStr];}else{all[dateStr]=snacks;}
+  // Keep only last 90 days
+  const keys=Object.keys(all).sort().slice(-90);
+  const trimmed={};keys.forEach(k=>trimmed[k]=all[k]);
+  localStorage.setItem('snackLog',JSON.stringify(trimmed));
+}
+
+function renderSnackList(snacks,dateStr){
+  if(!snacks.length)return'';
+  return snacks.map((s,i)=>`
+    <div class="snack-entry" id="snack_${dateStr}_${i}">
+      <span class="snack-entry-name">${s.name}</span>
+      <span class="snack-entry-kcal">~${s.kcal} kcal</span>
+      <button class="snack-del" onclick="deleteSnack('${dateStr}',${i})">×</button>
+    </div>`).join('');
+}
+
+function deleteSnack(dateStr,idx){
+  const snacks=loadSnacks(dateStr);
+  snacks.splice(idx,1);
+  saveSnacksForDay(dateStr,snacks);
+  refreshSnackUI(dateStr);
+  renderSnackStats();
+}
+
+function refreshSnackUI(dateStr){
+  const snacks=loadSnacks(dateStr);
+  const total=snacks.reduce((s,x)=>s+x.kcal,0);
+  const listEl=document.getElementById(`snackList_${dateStr}`);
+  if(listEl)listEl.innerHTML=renderSnackList(snacks,dateStr);
+  // Update or show total bar
+  const card=listEl?listEl.closest('.card'):null;
+  if(card){
+    let totalBar=card.querySelector('.snack-total-bar');
+    if(total>0){
+      if(!totalBar){
+        totalBar=document.createElement('div');
+        totalBar.className='snack-total-bar';
+        card.appendChild(totalBar);
+      }
+      totalBar.innerHTML=`<span class="snack-total-label">Total snacks aujourd'hui</span><span class="snack-total-val">+${total} kcal</span>`;
+    }else if(totalBar){
+      totalBar.remove();
+    }
+  }
+}
+
+async function addSnack(dateStr){
+  const input=document.getElementById('snackInput');
+  const btn=document.getElementById('snackAddBtn');
+  const val=(input?input.value:'').trim();
+  if(!val)return;
+  
+  // Show estimating state
+  input.value='';
+  btn.disabled=true;
+  btn.textContent='…';
+  const listEl=document.getElementById(`snackList_${dateStr}`);
+  if(listEl){
+    const ghost=document.createElement('div');
+    ghost.className='snack-estimating';
+    ghost.id='snackGhost';
+    ghost.innerHTML=`<div class="spinner"></div><span>Estimation de "${val}"…</span>`;
+    listEl.appendChild(ghost);
+  }
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:100,
+        messages:[{role:'user',content:`Estime les calories de ce snack: "${val}". Réponds UNIQUEMENT en JSON: {"name":"description courte","kcal":nombre_entier}. Sois précise, utilise une portion standard si non précisé.`}]
+      })
+    });
+    const data=await resp.json();
+    const text=data.content.find(b=>b.type==='text')?.text||'';
+    const clean=text.replace(/\`\`\`json|\`\`\`/g,'').trim();
+    const result=JSON.parse(clean);
+    
+    const snacks=loadSnacks(dateStr);
+    snacks.push({name:result.name||val,kcal:Math.round(result.kcal)||0});
+    saveSnacksForDay(dateStr,snacks);
+  }catch{
+    // Fallback: save without calories
+    const snacks=loadSnacks(dateStr);
+    snacks.push({name:val,kcal:0});
+    saveSnacksForDay(dateStr,snacks);
+  }finally{
+    btn.disabled=false;
+    btn.textContent='+ Estimer';
+    const ghost=document.getElementById('snackGhost');
+    if(ghost)ghost.remove();
+    refreshSnackUI(dateStr);
+    renderSnackStats();
+  }
+}
+
+function renderSnackStats(){
+  const el=document.getElementById('snackStatsSection');
+  if(!el)return;
+  const all=loadSnacksAll();
+  const entries=Object.entries(all)
+    .filter(([,snacks])=>snacks.length>0)
+    .sort((a,b)=>b[0].localeCompare(a[0]))
+    .slice(0,30);
+  
+  if(!entries.length){
+    el.innerHTML=`<div style="font-size:13px;color:var(--muted);padding:8px 0">Aucun snack enregistré — bien joué ! 🎉</div>`;
+    return;
+  }
+
+  const now=new Date();
+  const monthKey=now.toISOString().slice(0,7);
+  const monthEntries=entries.filter(([d])=>d.startsWith(monthKey));
+  const monthTotal=monthEntries.reduce((s,[,snacks])=>s+snacks.reduce((a,x)=>a+x.kcal,0),0);
+  const daysWithSnacks=monthEntries.length;
+  const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const daysSoFar=now.getDate();
+  const cleanDays=daysSoFar-daysWithSnacks;
+
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="stat-card"><div class="stat-val" style="font-size:20px;color:#E24B4A">+${monthTotal.toLocaleString('fr-FR')}</div><div class="stat-label">kcal snacks ce mois</div></div>
+      <div class="stat-card"><div class="stat-val" style="font-size:20px;color:var(--green)">${cleanDays}</div><div class="stat-label">jours sans snack 🎉</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;padding:0 2px">${daysWithSnacks} jour${daysWithSnacks>1?'s':''} avec snacks sur ${daysSoFar} jours ce mois</div>
+    ${entries.map(([date,snacks])=>{
+      const total=snacks.reduce((s,x)=>s+x.kcal,0);
+      return`<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px 14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;color:var(--muted)">${date}</span>
+          <span style="font-size:13px;font-weight:500;color:#E24B4A">+${total} kcal</span>
+        </div>
+        ${snacks.map(s=>`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text);padding:2px 0;border-top:1px solid var(--bg)"><span>${s.name}</span><span style="color:var(--muted)">~${s.kcal} kcal</span></div>`).join('')}
+      </div>`;
+    }).join('')}`;
+}
+
+// ── STEPS ────────────────────────────────────────────────
+function loadStepsAll(){try{return JSON.parse(localStorage.getItem('stepsLog')||'{}');}catch{return{};}}
+function loadSteps(dateStr){const all=loadStepsAll();return all[dateStr]||null;}
+function saveSteps(dateStr){
+  const val=parseInt(document.getElementById('stepsInput').value);
+  if(!val||val<0||val>99999)return;
+  const all=loadStepsAll();
+  all[dateStr]=val;
+  // Keep only last 90 days
+  const keys=Object.keys(all).sort().slice(-90);
+  const trimmed={};keys.forEach(k=>trimmed[k]=all[k]);
+  localStorage.setItem('stepsLog',JSON.stringify(trimmed));
+  // Update UI inline
+  const pct=Math.min(100,Math.round(val/8000*100));
+  const bar=document.getElementById('stepsBar');
+  if(bar)bar.style.width=pct+'%';
+  const input=document.getElementById('stepsInput');
+  if(input){input.placeholder=val.toLocaleString('fr-FR');input.value='';}
+  const meta=document.querySelector('.steps-meta span');
+  if(meta)meta.textContent=val.toLocaleString('fr-FR')+' pas';
+  // Also refresh stats if open
+  renderStepsStats();
+}
+function renderStepsStats(){
+  const el=document.getElementById('stepsStatsSection');
+  if(!el)return;
+  const all=loadStepsAll();
+  const entries=Object.entries(all).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,14);
+  if(!entries.length){el.innerHTML=`<div style="font-size:13px;color:var(--muted);padding:8px 0">Aucune entrée pour l'instant</div>`;return;}
+  const vals=entries.map(e=>e[1]);
+  const avg=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+  const best=Math.max(...vals);
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="stat-card"><div class="stat-val" style="font-size:22px;color:var(--amber)">${avg.toLocaleString('fr-FR')}</div><div class="stat-label">moyenne / jour</div></div>
+      <div class="stat-card"><div class="stat-val" style="font-size:22px;color:var(--amber)">${best.toLocaleString('fr-FR')}</div><div class="stat-label">meilleur jour</div></div>
+    </div>
+    ${entries.map(([date,steps])=>{
+      const pct=Math.min(100,Math.round(steps/8000*100));
+      const reached=steps>=8000;
+      return`<div class="steps-history-row">
+        <span style="color:var(--muted);font-size:12px">${date}</span>
+        <div style="flex:1;margin:0 10px">
+          <div class="steps-bar-wrap"><div class="steps-bar" style="width:${pct}%;background:${reached?'var(--green)':'var(--amber)'}"></div></div>
+        </div>
+        <span class="steps-val-badge" style="background:${reached?'var(--green-light)':'var(--amber-light)'};color:${reached?'var(--green-dark)':'var(--amber)'}">${reached?'✓ ':''} ${steps.toLocaleString('fr-FR')}</span>
+      </div>`;
+    }).join('')}`;
+}
+
+// ── INIT ─────────────────────────────────────────────────
+updateBadge();
+buildWeekNav();
+renderDay(selectedDate);
+renderStats();
+</script>
+</body>
+</html>
