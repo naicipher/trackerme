@@ -125,6 +125,18 @@
   .nutri-tm-label{font-size:10px;opacity:.7;}
   .nutri-estimating{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border-radius:11px;margin-bottom:6px;font-size:13px;color:var(--muted);}
   .tip{background:var(--green-light);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;font-size:13px;color:var(--green-dark);line-height:1.6;}
+  /* EXPORT / IMPORT */
+  .export-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;}
+  .export-title{font-size:14px;font-weight:500;margin-bottom:4px;}
+  .export-sub{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
+  .export-btn{width:100%;padding:12px;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:none;margin-bottom:8px;}
+  .export-btn.green{background:var(--green);color:white;}
+  .export-btn.outline{background:var(--card);color:var(--green);border:1.5px solid var(--green);}
+  .export-btn.amber{background:var(--amber);color:white;}
+  .import-drop{border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s;margin-bottom:8px;}
+  .import-drop:hover,.import-drop.drag{border-color:var(--green);color:var(--green);background:var(--green-light);}
+  .import-success{background:var(--green-light);color:var(--green-dark);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:8px;display:none;}
+  .import-error{background:#FDE8E8;color:#8B1A1A;border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:8px;display:none;}
   .rest-card{background:var(--card);border-radius:var(--radius);padding:28px 20px;text-align:center;border:1px solid var(--border);margin-bottom:10px;}
 
   /* MEAL CARD */
@@ -243,6 +255,23 @@
 
     <!-- STATS -->
     <div class="view" id="viewStats">
+      <p class="section-title">Export & Import</p>
+      <div class="export-card">
+        <div class="export-title">📤 Exporter mes données</div>
+        <div class="export-sub">Télécharge un fichier JSON avec toutes tes données (repas, poids, pas, snacks, macros). À faire une fois par semaine ou par mois.</div>
+        <button class="export-btn green" onclick="exportData()">⬇️ Télécharger mon export</button>
+        <button class="export-btn outline" onclick="exportCSV()">📊 Export CSV (tableur)</button>
+      </div>
+      <div class="export-card">
+        <div class="export-title">📥 Importer des données</div>
+        <div class="export-sub">Réimporte un fichier JSON exporté depuis l'app pour restaurer ou fusionner tes données (depuis un autre appareil ou après une mise à jour).</div>
+        <div class="import-drop" id="importDrop" onclick="document.getElementById('importFile').click()">
+          Appuie ici pour choisir un fichier JSON
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+        <div class="import-success" id="importSuccess"></div>
+        <div class="import-error" id="importError"></div>
+      </div>
       <p class="section-title">Ma progression</p>
       <div class="stat-grid">
         <div class="stat-card"><div class="stat-val" id="statPoids">81,4</div><div class="stat-label">kg actuels</div></div>
@@ -943,6 +972,189 @@ function switchView(v){
 }
 function updateBadge(){
   document.getElementById('todayBadge').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
+}
+
+// ── EXPORT / IMPORT ──────────────────────────────────────
+function collectAllData(){
+  const now = new Date().toISOString();
+  const weights = loadWeights();
+  const steps = loadStepsAll();
+  const snacks = loadSnacksAll();
+  const nutri = loadNutriAll();
+  const prefs = loadPrefs();
+  // Compute daily nutrition summaries
+  const nutriSummary = {};
+  Object.entries(nutri).forEach(([date, data]) => {
+    const all = [...(data.breakfast||[]), ...(data.lunch||[]), ...(data.dinner||[])];
+    const tot = all.reduce((a,x) => ({kcal:a.kcal+(x.kcal||0), p:a.p+(x.p||0), c:a.c+(x.c||0), f:a.f+(x.f||0)}), {kcal:0,p:0,c:0,f:0});
+    nutriSummary[date] = {
+      total: tot,
+      meals: {
+        breakfast: data.breakfast||[],
+        lunch: data.lunch||[],
+        dinner: data.dinner||[]
+      }
+    };
+  });
+  // Compute monthly snack totals
+  const snackSummary = {};
+  Object.entries(snacks).forEach(([date, items]) => {
+    const month = date.slice(0,7);
+    if(!snackSummary[month]) snackSummary[month] = {total_kcal:0, days:0};
+    snackSummary[month].total_kcal += items.reduce((s,x) => s+(x.kcal||0), 0);
+    snackSummary[month].days++;
+  });
+  return {
+    exported_at: now,
+    app_version: '1.0',
+    profile: { start_weight: 81.4, goal_weight: 70, start_date: '2024-06-01' },
+    preferences: prefs,
+    weight_log: weights,
+    steps_log: steps,
+    snack_log: snacks,
+    snack_monthly_summary: snackSummary,
+    nutrition_log: nutriSummary,
+    nutrition_raw: nutri
+  };
+}
+
+function exportData(){
+  const data = collectAllData();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `monplanforme_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV(){
+  const nutri = loadNutriAll();
+  const steps = loadStepsAll();
+  const snacks = loadSnacksAll();
+  const weights = loadWeights();
+  // Build rows
+  const rows = [['Date','Poids (kg)','Pas','Kcal repas','Proteines (g)','Glucides (g)','Lipides (g)','Kcal snacks','Petit-dejeuner','Dejeuner','Diner']];
+  // Collect all dates
+  const allDates = new Set([
+    ...Object.keys(nutri),
+    ...Object.keys(steps),
+    ...Object.keys(snacks),
+    ...weights.map(w => {
+      // Convert fr date to ISO if possible
+      try {
+        const parts = w.date.split('/');
+        if(parts.length === 3) return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+      } catch{}
+      return null;
+    }).filter(Boolean)
+  ]);
+  const weightByDate = {};
+  weights.forEach(w => {
+    try {
+      const parts = w.date.split('/');
+      if(parts.length === 3){
+        const iso = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        weightByDate[iso] = w.val;
+      }
+    } catch{}
+  });
+  [...allDates].sort().forEach(date => {
+    const n = nutri[date];
+    let kcal=0, p=0, c=0, f=0, pdj='', dej='', din='';
+    if(n){
+      const all = [...(n.breakfast||[]), ...(n.lunch||[]), ...(n.dinner||[])];
+      kcal = all.reduce((s,x)=>s+(x.kcal||0),0);
+      p = all.reduce((s,x)=>s+(x.p||0),0);
+      c = all.reduce((s,x)=>s+(x.c||0),0);
+      f = all.reduce((s,x)=>s+(x.f||0),0);
+      pdj = (n.breakfast||[]).map(x=>x.name).join(' + ');
+      dej = (n.lunch||[]).map(x=>x.name).join(' + ');
+      din = (n.dinner||[]).map(x=>x.name).join(' + ');
+    }
+    const snackKcal = (snacks[date]||[]).reduce((s,x)=>s+(x.kcal||0),0);
+    rows.push([
+      date,
+      weightByDate[date]||'',
+      steps[date]||'',
+      kcal||'', p||'', c||'', f||'',
+      snackKcal||'',
+      `"${pdj}"`, `"${dej}"`, `"${din}"`
+    ]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `monplanforme_${date}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!data.exported_at) throw new Error('Fichier invalide');
+      let imported = 0;
+      // Merge weight log
+      if(data.weight_log && data.weight_log.length){
+        const existing = loadWeights();
+        const existingDates = new Set(existing.map(w=>w.date));
+        const newEntries = data.weight_log.filter(w => !existingDates.has(w.date));
+        const merged = [...existing, ...newEntries].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,52);
+        localStorage.setItem('weights', JSON.stringify(merged));
+        imported += newEntries.length;
+      }
+      // Merge steps
+      if(data.steps_log){
+        const existing = loadStepsAll();
+        const merged = {...data.steps_log, ...existing}; // local takes priority
+        localStorage.setItem('stepsLog', JSON.stringify(merged));
+        imported += Object.keys(data.steps_log).length;
+      }
+      // Merge snacks
+      if(data.snack_log){
+        const existing = loadSnacksAll();
+        const merged = {...data.snack_log, ...existing};
+        localStorage.setItem('snackLog', JSON.stringify(merged));
+        imported += Object.keys(data.snack_log).length;
+      }
+      // Merge nutrition
+      if(data.nutrition_raw){
+        const existing = loadNutriAll();
+        const merged = {...data.nutrition_raw, ...existing};
+        localStorage.setItem('nutriLog', JSON.stringify(merged));
+        imported += Object.keys(data.nutrition_raw).length;
+      }
+      // Merge prefs (imported prefs only if no local prefs)
+      if(data.preferences && !localStorage.getItem('prefs')){
+        localStorage.setItem('prefs', JSON.stringify(data.preferences));
+      }
+      showImportResult(true, `✅ Import réussi ! ${imported} entrées fusionnées. Exporté le ${data.exported_at.slice(0,10)}.`);
+      renderStats(); renderStepsStats(); renderSnackStats(); renderNutriStats();
+    } catch(err){
+      showImportResult(false, `❌ Erreur : fichier invalide ou corrompu. (${err.message})`);
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function showImportResult(success, msg){
+  const el = document.getElementById(success ? 'importSuccess' : 'importError');
+  const other = document.getElementById(success ? 'importError' : 'importSuccess');
+  if(el){ el.textContent = msg; el.style.display = 'block'; }
+  if(other){ other.style.display = 'none'; }
+  setTimeout(() => { if(el) el.style.display = 'none'; }, 5000);
 }
 
 // ── NUTRITION TRACKER ────────────────────────────────────
