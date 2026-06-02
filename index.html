@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TrackerMe">
-<title>TrackerMe</title>
+<meta name="apple-mobile-web-app-title" content="Mon Plan Forme">
+<title>Mon Plan Forme</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -222,17 +222,6 @@
   .nav-item.active .nav-icon{transform:scale(1.1);}
   .view{display:none;}.view.active{display:block;}
 </style>
-
-  <meta name="theme-color" content="#1D9E75">
-  <script>
-    if('serviceWorker' in navigator){
-      window.addEventListener('load', function(){
-        const sw = "self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))));";
-        const blob = new Blob([sw], {type:'application/javascript'});
-        navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
-      });
-    }
-  </script>
 </head>
 <body>
 <div class="app">
@@ -617,6 +606,19 @@ async function renderDay(date){
   });
   html+=`</div>`;
 
+  // Snack section
+  const daySnacks=loadSnacks(dateStr);
+  const daySnackTotal=daySnacks.reduce((s,x)=>s+x.kcal,0);
+  html+=`<p class="section-title">🍪 Snacks <span style="font-size:11px;font-weight:400;color:var(--muted)">(optionnel)</span></p>
+  <div class="card">
+    <div class="snack-input-row">
+      <input type="text" class="snack-input" id="snackInput" placeholder="ex: 2 carrés chocolat, chips…">
+      <button class="snack-add-btn" id="snackAddBtn" onclick="addSnack('${dateStr}')">+ Ajouter</button>
+    </div>
+    <div id="snackList_${dateStr}">${renderSnackList(daySnacks,dateStr)}</div>
+    ${daySnackTotal>0?`<div class="snack-total-bar"><span class="snack-total-label">Total snacks</span><span class="snack-total-val">+${daySnackTotal} kcal</span></div>`:''}
+  </div>`;
+
   const stepsData=loadSteps(dateStr);
   const stepsPct=stepsData?Math.min(100,Math.round(stepsData/8000*100)):0;
   const stepsDisplay=stepsData?stepsData.toLocaleString('fr-FR'):'—';
@@ -648,6 +650,14 @@ async function renderDay(date){
   </div>`;
 
   document.getElementById('dayContent').innerHTML=html;
+  // Restore saved check state for this date
+  try {
+    const saved = JSON.parse(localStorage.getItem('checks_' + dateStr) || 'null');
+    if(saved) {
+      const allChecks = [...document.querySelectorAll('.checklist .check-item')];
+      allChecks.forEach((c, i) => { if(saved[i]) c.classList.add('checked'); });
+    }
+  } catch{}
 
   // Load meals if not cached
   if(!cached){
@@ -911,7 +921,14 @@ function renderStats(){
 }
 
 // ── MISC ─────────────────────────────────────────────────
-function toggleCheck(el){el.classList.toggle('checked');}
+function toggleCheck(el){
+  el.classList.toggle('checked');
+  // Persist checklist state for today
+  const dateStr = toDateStr(selectedDate);
+  const allChecks = [...document.querySelectorAll('.checklist .check-item')];
+  const state = allChecks.map(c => c.classList.contains('checked'));
+  try { localStorage.setItem('checks_' + dateStr, JSON.stringify(state)); } catch{}
+}
 function switchView(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
